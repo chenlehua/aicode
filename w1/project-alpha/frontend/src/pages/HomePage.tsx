@@ -1,20 +1,22 @@
-import { useState } from "react";
-import { MainLayout } from "@/components/layout/MainLayout";
-import { TicketList } from "@/components/tickets/TicketList";
-import { TicketFormDialog } from "@/components/dialogs/TicketFormDialog";
-import { TagFormDialog } from "@/components/dialogs/TagFormDialog";
-import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
-import { useTickets, useTags } from "@/hooks";
+import { useState } from 'react'
+import { MainLayout } from '@/components/layout/MainLayout'
+import { TicketList } from '@/components/tickets/TicketList'
+import { TicketFormDialog } from '@/components/dialogs/TicketFormDialog'
+import { TagFormDialog } from '@/components/dialogs/TagFormDialog'
+import { ConfirmDialog } from '@/components/dialogs/ConfirmDialog'
+import { useTickets, useTags } from '@/hooks'
 import {
   useCreateTicket,
   useUpdateTicket,
   useDeleteTicket,
   useCompleteTicket,
   useReopenTicket,
-} from "@/hooks/useTickets";
-import { useCreateTag, useUpdateTag, useDeleteTag } from "@/hooks/useTags";
-import { useFilters } from "@/hooks/useFilters";
-import { useToast } from "@/hooks/use-toast";
+  useBatchCompleteTickets,
+  useBatchDeleteTickets,
+} from '@/hooks/useTickets'
+import { useCreateTag, useUpdateTag, useDeleteTag } from '@/hooks/useTags'
+import { useFilters } from '@/hooks/useFilters'
+import { useToast } from '@/hooks/use-toast'
 import {
   Ticket,
   Tag,
@@ -22,202 +24,249 @@ import {
   UpdateTicketInput,
   CreateTagInput,
   UpdateTagInput,
-} from "@/types";
-import { TicketStatus } from "@/components/filters/StatusFilter";
+} from '@/types'
+import { TicketStatus } from '@/components/filters/StatusFilter'
 
 export function HomePage() {
-  const { toast } = useToast();
-  const { filters, setStatus, setTagIds, setSearch } = useFilters();
+  const { toast } = useToast()
+  const { filters, setStatus, setTagIds, setSearch, setSortBy, setSortOrder } = useFilters()
 
   // Queries
-  const { data: ticketsData, isLoading: ticketsLoading } = useTickets(filters);
-  const { data: tags = [] } = useTags();
+  const { data: ticketsData, isLoading: ticketsLoading } = useTickets(filters)
+  const { data: tags = [] } = useTags()
 
   // Mutations
-  const createTicket = useCreateTicket();
-  const updateTicket = useUpdateTicket();
-  const deleteTicket = useDeleteTicket();
-  const completeTicket = useCompleteTicket();
-  const reopenTicket = useReopenTicket();
-  const createTag = useCreateTag();
-  const updateTag = useUpdateTag();
-  const deleteTag = useDeleteTag();
+  const createTicket = useCreateTicket()
+  const updateTicket = useUpdateTicket()
+  const deleteTicket = useDeleteTicket()
+  const completeTicket = useCompleteTicket()
+  const reopenTicket = useReopenTicket()
+  const batchCompleteTickets = useBatchCompleteTickets()
+  const batchDeleteTickets = useBatchDeleteTickets()
+  const createTag = useCreateTag()
+  const updateTag = useUpdateTag()
+  const deleteTag = useDeleteTag()
 
   // Dialog states
-  const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
-  const [tagDialogOpen, setTagDialogOpen] = useState(false);
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-  const [editingTicket, setEditingTicket] = useState<Ticket | null>(null);
-  const [editingTag, setEditingTag] = useState<Tag | null>(null);
-  const [deletingTicket, setDeletingTicket] = useState<string | null>(null);
-  const [deletingTag, setDeletingTag] = useState<string | null>(null);
+  const [ticketDialogOpen, setTicketDialogOpen] = useState(false)
+  const [tagDialogOpen, setTagDialogOpen] = useState(false)
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
+  const [editingTicket, setEditingTicket] = useState<Ticket | null>(null)
+  const [editingTag, setEditingTag] = useState<Tag | null>(null)
+  const [deletingTicket, setDeletingTicket] = useState<string | null>(null)
+  const [deletingTag, setDeletingTag] = useState<string | null>(null)
+  const [batchDeleteIds, setBatchDeleteIds] = useState<string[]>([])
 
   // Ticket handlers
   const handleNewTicket = () => {
-    setEditingTicket(null);
-    setTicketDialogOpen(true);
-  };
+    setEditingTicket(null)
+    setTicketDialogOpen(true)
+  }
 
   const handleEditTicket = (ticketId: string) => {
-    const ticket = ticketsData?.items.find((t) => t.id === ticketId);
+    const ticket = ticketsData?.items.find(t => t.id === ticketId)
     if (ticket) {
-      setEditingTicket(ticket);
-      setTicketDialogOpen(true);
+      setEditingTicket(ticket)
+      setTicketDialogOpen(true)
     }
-  };
+  }
 
   const handleDeleteTicket = (ticketId: string) => {
-    setDeletingTicket(ticketId);
-    setConfirmDialogOpen(true);
-  };
+    setDeletingTicket(ticketId)
+    setConfirmDialogOpen(true)
+  }
 
   const handleConfirmDeleteTicket = async () => {
-    if (!deletingTicket) return;
+    if (!deletingTicket || deletingTicket === 'batch') return
     try {
-      await deleteTicket.mutateAsync(deletingTicket);
+      await deleteTicket.mutateAsync(deletingTicket)
       toast({
-        title: "成功",
-        description: "Ticket 已删除",
-      });
+        title: '成功',
+        description: 'Ticket 已删除',
+      })
     } catch (error) {
       toast({
-        title: "错误",
-        description: "删除失败",
-        variant: "destructive",
-      });
+        title: '错误',
+        description: '删除失败',
+        variant: 'destructive',
+      })
     } finally {
-      setDeletingTicket(null);
+      setDeletingTicket(null)
     }
-  };
+  }
 
-  const handleTicketSubmit = async (
-    data: CreateTicketInput | UpdateTicketInput,
-  ) => {
+  const handleTicketSubmit = async (data: CreateTicketInput | UpdateTicketInput) => {
     try {
       if (editingTicket) {
-        await updateTicket.mutateAsync({ id: editingTicket.id, input: data });
+        await updateTicket.mutateAsync({ id: editingTicket.id, input: data })
         toast({
-          title: "成功",
-          description: "Ticket 已更新",
-        });
+          title: '成功',
+          description: 'Ticket 已更新',
+        })
       } else {
-        await createTicket.mutateAsync(data);
+        await createTicket.mutateAsync(data)
         toast({
-          title: "成功",
-          description: "Ticket 已创建",
-        });
+          title: '成功',
+          description: 'Ticket 已创建',
+        })
       }
-      setTicketDialogOpen(false);
-      setEditingTicket(null);
+      setTicketDialogOpen(false)
+      setEditingTicket(null)
     } catch (error) {
       toast({
-        title: "错误",
-        description: editingTicket ? "更新失败" : "创建失败",
-        variant: "destructive",
-      });
+        title: '错误',
+        description: editingTicket ? '更新失败' : '创建失败',
+        variant: 'destructive',
+      })
     }
-  };
+  }
 
   const handleCompleteTicket = async (ticketId: string) => {
     try {
-      await completeTicket.mutateAsync(ticketId);
+      await completeTicket.mutateAsync(ticketId)
       toast({
-        title: "成功",
-        description: "Ticket 已完成",
-      });
+        title: '成功',
+        description: 'Ticket 已完成',
+      })
     } catch (error) {
       toast({
-        title: "错误",
-        description: "操作失败",
-        variant: "destructive",
-      });
+        title: '错误',
+        description: '操作失败',
+        variant: 'destructive',
+      })
     }
-  };
+  }
 
   const handleReopenTicket = async (ticketId: string) => {
     try {
-      await reopenTicket.mutateAsync(ticketId);
+      await reopenTicket.mutateAsync(ticketId)
       toast({
-        title: "成功",
-        description: "Ticket 已重新打开",
-      });
+        title: '成功',
+        description: 'Ticket 已重新打开',
+      })
     } catch (error) {
       toast({
-        title: "错误",
-        description: "操作失败",
-        variant: "destructive",
-      });
+        title: '错误',
+        description: '操作失败',
+        variant: 'destructive',
+      })
     }
-  };
+  }
+
+  // Batch operations
+  const handleBatchComplete = async (ids: string[]) => {
+    if (ids.length === 0) return
+    try {
+      await batchCompleteTickets.mutateAsync(ids)
+      toast({
+        title: '成功',
+        description: `已批量完成 ${ids.length} 个 Ticket`,
+      })
+      // Clear selection after successful operation
+      // This will be handled by TicketList component resetting its state
+    } catch (error) {
+      toast({
+        title: '错误',
+        description: '批量完成失败',
+        variant: 'destructive',
+      })
+      // Don't clear selection on error so user can retry
+    }
+  }
+
+  const handleBatchDelete = async (ids: string[]) => {
+    if (ids.length === 0) return
+    setBatchDeleteIds(ids)
+    setDeletingTicket('batch')
+    setConfirmDialogOpen(true)
+  }
+
+  const handleConfirmBatchDelete = async () => {
+    if (batchDeleteIds.length === 0) return
+    try {
+      await batchDeleteTickets.mutateAsync(batchDeleteIds)
+      toast({
+        title: '成功',
+        description: `已批量删除 ${batchDeleteIds.length} 个 Ticket`,
+      })
+      setBatchDeleteIds([])
+      // Clear selection after successful operation
+      // This will be handled by TicketList component resetting its state
+    } catch (error) {
+      toast({
+        title: '错误',
+        description: '批量删除失败',
+        variant: 'destructive',
+      })
+      // Don't clear selection on error so user can retry
+    } finally {
+      setDeletingTicket(null)
+      setConfirmDialogOpen(false)
+    }
+  }
 
   // Tag handlers
   const handleNewTag = () => {
-    setEditingTag(null);
-    setTagDialogOpen(true);
-  };
+    setEditingTag(null)
+    setTagDialogOpen(true)
+  }
 
   const handleConfirmDeleteTag = async () => {
-    if (!deletingTag) return;
+    if (!deletingTag) return
     try {
-      await deleteTag.mutateAsync(deletingTag);
+      await deleteTag.mutateAsync(deletingTag)
       toast({
-        title: "成功",
-        description: "标签已删除",
-      });
+        title: '成功',
+        description: '标签已删除',
+      })
     } catch (error) {
       toast({
-        title: "错误",
-        description: "删除失败",
-        variant: "destructive",
-      });
+        title: '错误',
+        description: '删除失败',
+        variant: 'destructive',
+      })
     } finally {
-      setDeletingTag(null);
+      setDeletingTag(null)
     }
-  };
+  }
 
   const handleTagSubmit = async (data: CreateTagInput | UpdateTagInput) => {
     try {
       if (editingTag) {
-        await updateTag.mutateAsync({ id: editingTag.id, input: data });
+        await updateTag.mutateAsync({ id: editingTag.id, input: data })
         toast({
-          title: "成功",
-          description: "标签已更新",
-        });
+          title: '成功',
+          description: '标签已更新',
+        })
       } else {
-        await createTag.mutateAsync(data);
+        await createTag.mutateAsync(data)
         toast({
-          title: "成功",
-          description: "标签已创建",
-        });
+          title: '成功',
+          description: '标签已创建',
+        })
       }
-      setTagDialogOpen(false);
-      setEditingTag(null);
+      setTagDialogOpen(false)
+      setEditingTag(null)
     } catch (error) {
       toast({
-        title: "错误",
-        description: editingTag ? "更新失败" : "创建失败",
-        variant: "destructive",
-      });
+        title: '错误',
+        description: editingTag ? '更新失败' : '创建失败',
+        variant: 'destructive',
+      })
     }
-  };
+  }
 
   // Convert status filter
   const statusFilter: TicketStatus =
-    filters.status === "open"
-      ? "open"
-      : filters.status === "completed"
-        ? "completed"
-        : "all";
+    filters.status === 'open' ? 'open' : filters.status === 'completed' ? 'completed' : 'all'
 
   return (
     <>
       <MainLayout
-        search={filters.search || ""}
+        search={filters.search || ''}
         onSearchChange={setSearch}
         status={statusFilter}
-        onStatusChange={(status) =>
-          setStatus(status === "all" ? undefined : status)
-        }
+        onStatusChange={status => setStatus(status === 'all' ? undefined : status)}
         tags={tags}
         selectedTagIds={filters.tagIds || []}
         onTagIdsChange={setTagIds}
@@ -231,6 +280,15 @@ export function HomePage() {
           onReopen={handleReopenTicket}
           onEdit={handleEditTicket}
           onDelete={handleDeleteTicket}
+          onBatchComplete={handleBatchComplete}
+          onBatchDelete={handleBatchDelete}
+          isBatchLoading={batchCompleteTickets.isPending || batchDeleteTickets.isPending}
+          sortBy={filters.sortBy || 'created_at'}
+          sortOrder={filters.sortOrder || 'desc'}
+          onSortChange={(sortBy, sortOrder) => {
+            setSortBy(sortBy)
+            setSortOrder(sortOrder)
+          }}
         />
       </MainLayout>
 
@@ -244,14 +302,14 @@ export function HomePage() {
             ? {
                 title: editingTicket.title,
                 description: editingTicket.description || undefined,
-                tagIds: editingTicket.tags.map((t) => t.id),
+                tagIds: editingTicket.tags.map(t => t.id),
               }
             : undefined
         }
         onSubmit={handleTicketSubmit}
         onNewTag={handleNewTag}
         isLoading={createTicket.isPending || updateTicket.isPending}
-        mode={editingTicket ? "edit" : "create"}
+        mode={editingTicket ? 'edit' : 'create'}
       />
 
       <TagFormDialog
@@ -267,24 +325,36 @@ export function HomePage() {
         }
         onSubmit={handleTagSubmit}
         isLoading={createTag.isPending || updateTag.isPending}
-        mode={editingTag ? "edit" : "create"}
+        mode={editingTag ? 'edit' : 'create'}
       />
 
       <ConfirmDialog
         open={confirmDialogOpen}
         onOpenChange={setConfirmDialogOpen}
-        title={deletingTicket ? "删除 Ticket" : "删除标签"}
+        title={
+          deletingTicket === 'batch'
+            ? '批量删除 Ticket'
+            : deletingTicket
+              ? '删除 Ticket'
+              : '删除标签'
+        }
         description={
-          deletingTicket
-            ? "确定要删除这个 Ticket 吗？此操作无法撤销。"
-            : "确定要删除这个标签吗？所有关联的 Ticket 将自动解除关联。"
+          deletingTicket === 'batch'
+            ? `确定要删除选中的 ${batchDeleteIds.length} 个 Ticket 吗？此操作无法撤销。`
+            : deletingTicket
+              ? '确定要删除这个 Ticket 吗？此操作无法撤销。'
+              : '确定要删除这个标签吗？所有关联的 Ticket 将自动解除关联。'
         }
         confirmText="删除"
         onConfirm={
-          deletingTicket ? handleConfirmDeleteTicket : handleConfirmDeleteTag
+          deletingTicket === 'batch'
+            ? handleConfirmBatchDelete
+            : deletingTicket
+              ? handleConfirmDeleteTicket
+              : handleConfirmDeleteTag
         }
         variant="destructive"
       />
     </>
-  );
+  )
 }

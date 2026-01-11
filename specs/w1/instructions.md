@@ -31,3 +31,9 @@
 ## pre commit
 
 use pre-commit to init the config and setup prcommit for python and typescript for this project, also setup github action properly.
+
+
+
+## 优化UI
+
+按照 apple website 的设计风格，think ultra hard，优化UI和UX。

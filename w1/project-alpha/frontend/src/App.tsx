@@ -1,6 +1,6 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { HomePage } from "./pages/HomePage";
-import { Toaster } from "./components/ui/toaster";
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { HomePage } from './pages/HomePage'
+import { Toaster } from './components/ui/toaster'
 
 function App() {
   return (
@@ -10,7 +10,7 @@ function App() {
       </Routes>
       <Toaster />
     </BrowserRouter>
-  );
+  )
 }
 
-export default App;
+export default App

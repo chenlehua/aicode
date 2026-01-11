@@ -4,17 +4,17 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { TagForm } from "@/components/tags/TagForm";
-import { CreateTagInput, UpdateTagInput } from "@/types";
+} from '@/components/ui/dialog'
+import { TagForm } from '@/components/tags/TagForm'
+import { CreateTagInput, UpdateTagInput } from '@/types'
 
 interface TagFormDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  initialData?: CreateTagInput | UpdateTagInput;
-  onSubmit: (data: CreateTagInput | UpdateTagInput) => void;
-  isLoading?: boolean;
-  mode?: "create" | "edit";
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  initialData?: CreateTagInput | UpdateTagInput
+  onSubmit: (data: CreateTagInput | UpdateTagInput) => void
+  isLoading?: boolean
+  mode?: 'create' | 'edit'
 }
 
 export function TagFormDialog({
@@ -23,23 +23,19 @@ export function TagFormDialog({
   initialData,
   onSubmit,
   isLoading = false,
-  mode = "create",
+  mode = 'create',
 }: TagFormDialogProps) {
   const handleSubmit = (data: CreateTagInput | UpdateTagInput) => {
-    onSubmit(data);
-  };
+    onSubmit(data)
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            {mode === "create" ? "新建标签" : "编辑标签"}
-          </DialogTitle>
+          <DialogTitle>{mode === 'create' ? '新建标签' : '编辑标签'}</DialogTitle>
           <DialogDescription>
-            {mode === "create"
-              ? "创建一个新标签用于分类 Ticket"
-              : "修改标签信息"}
+            {mode === 'create' ? '创建一个新标签用于分类 Ticket' : '修改标签信息'}
           </DialogDescription>
         </DialogHeader>
         <TagForm
@@ -50,5 +46,5 @@ export function TagFormDialog({
         />
       </DialogContent>
     </Dialog>
-  );
+  )
 }

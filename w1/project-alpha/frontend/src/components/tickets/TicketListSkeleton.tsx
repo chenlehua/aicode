@@ -1,5 +1,5 @@
-import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Card } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export function TicketListSkeleton() {
   return (
@@ -28,5 +28,5 @@ export function TicketListSkeleton() {
         </Card>
       ))}
     </div>
-  );
+  )
 }
