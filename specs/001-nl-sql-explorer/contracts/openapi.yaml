@@ -1,0 +1,647 @@
+openapi: 3.1.0
+info:
+  title: DB Query API
+  description: Natural Language SQL Explorer - Query PostgreSQL databases with SQL or natural language
+  version: 1.0.0
+  
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+
+paths:
+  /api/v1/dbs:
+    get:
+      summary: List all databases
+      description: Get all stored database connections with their metadata
+      operationId: listDatabases
+      tags:
+        - Databases
+      responses:
+        '200':
+          description: List of database connections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DatabaseResponse'
+
+  /api/v1/dbs/{name}:
+    put:
+      summary: Add or update database connection
+      description: Create a new database connection or update an existing one. Fetches and caches metadata.
+      operationId: upsertDatabase
+      tags:
+        - Databases
+      parameters:
+        - name: name
+          in: path
+          required: true
+          description: Unique name for the database connection
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9_-]{1,64}$'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatabaseCreate'
+      responses:
+        '200':
+          description: Database connection created/updated with metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseWithMetadata'
+        '400':
+          description: Invalid request (bad URL format)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: Could not connect to database
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      summary: Get database with metadata
+      description: Get a specific database connection with its cached metadata
+      operationId: getDatabase
+      tags:
+        - Databases
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Database with metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseWithMetadata'
+        '404':
+          description: Database not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Delete database connection
+      description: Remove a database connection and its cached metadata
+      operationId: deleteDatabase
+      tags:
+        - Databases
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Database deleted successfully
+        '404':
+          description: Database not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/dbs/{name}/query:
+    post:
+      summary: Execute SQL query
+      description: |
+        Execute a SQL query against the database. 
+        - Only SELECT queries are allowed
+        - Queries without LIMIT automatically get LIMIT 1000
+        - Syntax is validated before execution
+      operationId: executeQuery
+      tags:
+        - Queries
+      parameters:
+        - name: name
+          in: path
+          required: true
+          description: Database connection name
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueryRequest'
+      responses:
+        '200':
+          description: Query executed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryResult'
+        '400':
+          description: Invalid SQL (syntax error or non-SELECT query)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Database not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: Database query execution failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/dbs/{name}/query/natural:
+    post:
+      summary: Generate SQL from natural language
+      description: |
+        Convert a natural language description to SQL query.
+        Uses database metadata as context for accurate table/column references.
+      operationId: generateNaturalQuery
+      tags:
+        - Queries
+      parameters:
+        - name: name
+          in: path
+          required: true
+          description: Database connection name
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NaturalQueryRequest'
+      responses:
+        '200':
+          description: SQL generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratedSQL'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Database not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: LLM service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/dbs/{name}/history:
+    get:
+      summary: Get query history
+      description: Get paginated query history for a database
+      operationId: getQueryHistory
+      tags:
+        - History
+      parameters:
+        - name: name
+          in: path
+          required: true
+          description: Database connection name
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          description: Page number (1-based)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          description: Number of items per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Query history list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryHistoryList'
+        '404':
+          description: Database not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Clear query history
+      description: Delete all query history for a database
+      operationId: clearQueryHistory
+      tags:
+        - History
+      parameters:
+        - name: name
+          in: path
+          required: true
+          description: Database connection name
+          schema:
+            type: string
+      responses:
+        '204':
+          description: History cleared successfully
+        '404':
+          description: Database not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/dbs/{name}/history/{id}:
+    get:
+      summary: Get single history item
+      description: Get a specific query history item
+      operationId: getQueryHistoryItem
+      tags:
+        - History
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Query history item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryHistoryItem'
+        '404':
+          description: History item not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Delete history item
+      description: Delete a specific query history item
+      operationId: deleteQueryHistoryItem
+      tags:
+        - History
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: History item deleted
+        '404':
+          description: History item not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    DatabaseCreate:
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          type: string
+          description: PostgreSQL connection URL
+          pattern: '^postgres(ql)?://.*'
+          example: 'postgres://user:password@localhost:5432/mydb'
+
+    DatabaseResponse:
+      type: object
+      required:
+        - name
+        - url
+        - createdAt
+        - updatedAt
+      properties:
+        name:
+          type: string
+          example: 'mydb'
+        url:
+          type: string
+          example: 'postgres://user:***@localhost:5432/mydb'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ColumnMetadata:
+      type: object
+      required:
+        - name
+        - dataType
+        - isNullable
+        - isPrimaryKey
+        - isForeignKey
+      properties:
+        name:
+          type: string
+          example: 'id'
+        dataType:
+          type: string
+          example: 'integer'
+        isNullable:
+          type: boolean
+          example: false
+        defaultValue:
+          type: string
+          nullable: true
+          example: "nextval('users_id_seq')"
+        isPrimaryKey:
+          type: boolean
+          example: true
+        isForeignKey:
+          type: boolean
+          example: false
+        references:
+          type: string
+          nullable: true
+          description: Referenced table.column if foreign key
+          example: 'orders.user_id'
+
+    TableMetadata:
+      type: object
+      required:
+        - tableName
+        - tableType
+        - columns
+        - fetchedAt
+      properties:
+        tableName:
+          type: string
+          example: 'users'
+        tableType:
+          type: string
+          enum: [table, view]
+          example: 'table'
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/ColumnMetadata'
+        fetchedAt:
+          type: string
+          format: date-time
+
+    DatabaseMetadata:
+      type: object
+      required:
+        - databaseName
+        - tables
+        - views
+        - tableCount
+        - viewCount
+        - fetchedAt
+      properties:
+        databaseName:
+          type: string
+          example: 'mydb'
+        tables:
+          type: array
+          items:
+            $ref: '#/components/schemas/TableMetadata'
+        views:
+          type: array
+          items:
+            $ref: '#/components/schemas/TableMetadata'
+        tableCount:
+          type: integer
+          minimum: 0
+          example: 15
+        viewCount:
+          type: integer
+          minimum: 0
+          example: 3
+        fetchedAt:
+          type: string
+          format: date-time
+
+    DatabaseWithMetadata:
+      type: object
+      required:
+        - name
+        - url
+        - metadata
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+        metadata:
+          $ref: '#/components/schemas/DatabaseMetadata'
+
+    QueryRequest:
+      type: object
+      required:
+        - sql
+      properties:
+        sql:
+          type: string
+          description: SQL query to execute (SELECT only)
+          example: 'SELECT * FROM users WHERE active = true'
+
+    NaturalQueryRequest:
+      type: object
+      required:
+        - prompt
+      properties:
+        prompt:
+          type: string
+          description: Natural language description of desired query
+          minLength: 1
+          maxLength: 1000
+          example: '查询所有活跃用户'
+
+    ColumnInfo:
+      type: object
+      required:
+        - name
+        - dataType
+      properties:
+        name:
+          type: string
+        dataType:
+          type: string
+
+    QueryResult:
+      type: object
+      required:
+        - columns
+        - rows
+        - rowCount
+        - truncated
+        - executionTimeMs
+      properties:
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/ColumnInfo'
+        rows:
+          type: array
+          items:
+            type: array
+            items: {}
+        rowCount:
+          type: integer
+          minimum: 0
+        truncated:
+          type: boolean
+          description: True if results were limited by LIMIT 1000
+        executionTimeMs:
+          type: integer
+          minimum: 0
+
+    GeneratedSQL:
+      type: object
+      required:
+        - sql
+      properties:
+        sql:
+          type: string
+          description: Generated SQL query
+        explanation:
+          type: string
+          nullable: true
+          description: Optional explanation of the query
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error type/code
+          example: 'INVALID_SQL'
+        message:
+          type: string
+          description: Human-readable error message
+          example: 'Syntax error near "SELCT"'
+        details:
+          type: object
+          nullable: true
+          additionalProperties: true
+
+    QueryHistoryItem:
+      type: object
+      required:
+        - id
+        - databaseName
+        - sql
+        - queryType
+        - rowCount
+        - executionTimeMs
+        - status
+        - executedAt
+      properties:
+        id:
+          type: integer
+          example: 1
+        databaseName:
+          type: string
+          example: 'mydb'
+        sql:
+          type: string
+          example: 'SELECT * FROM users'
+        queryType:
+          type: string
+          enum: [manual, natural]
+          example: 'manual'
+        naturalPrompt:
+          type: string
+          nullable: true
+          description: Original natural language prompt (if queryType is natural)
+          example: '查询所有用户'
+        rowCount:
+          type: integer
+          minimum: 0
+          example: 42
+        executionTimeMs:
+          type: integer
+          minimum: 0
+          example: 156
+        status:
+          type: string
+          enum: [success, error]
+          example: 'success'
+        errorMessage:
+          type: string
+          nullable: true
+          description: Error message if status is error
+        executedAt:
+          type: string
+          format: date-time
+
+    QueryHistoryList:
+      type: object
+      required:
+        - items
+        - total
+        - page
+        - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/QueryHistoryItem'
+        total:
+          type: integer
+          minimum: 0
+          description: Total number of history items
+        page:
+          type: integer
+          minimum: 1
+          description: Current page number
+        pageSize:
+          type: integer
+          minimum: 1
+          description: Number of items per page

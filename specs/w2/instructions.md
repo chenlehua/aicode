@@ -23,3 +23,34 @@
 
 后端使用 Python（uv）/FastAPI /sqlglot /openai sdk来实现
 前端使用React/refine 5/tailwind /ant design 来实现。sql editor使用monaco editor来实现。
+
+LL使用阿里的通义千问模型，DASHSCOPE_API_KEY 在环境变量中。数据库连接和metadata 存储在 sqlite 数据库中，放在~/.db_query/db_query.db 中。
+
+后端API需要支持cors，允许所有origin。
+大致API如下：
+
+```bash
+# 获取所有已存储的数据库
+GET /api/v1/dbs
+
+# 获取一个数据库的metadata
+PUT /api/v1/dbs/{name}
+
+{
+    "url": "postgres://user:password@host:port/database"
+}
+
+# 查询某个数据库的信息
+POST /api/v1/dbs/{name}/query
+
+{
+    "sql": "select * from users"
+}
+
+# 根据自然语言生成sql
+POST /api/v1/dbs/{name}/query/natural
+
+{
+    "prompt": "查询用户表的所有信息"
+}
+```
