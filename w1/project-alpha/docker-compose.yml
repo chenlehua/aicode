@@ -1,0 +1,65 @@
+---
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: ticketapp_db
+    environment:
+      POSTGRES_USER: ticketapp
+      POSTGRES_PASSWORD: ticketapp
+      POSTGRES_DB: ticketapp
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ticketapp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ticketapp-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ticketapp_backend
+    environment:
+      DATABASE_URL: postgresql://ticketapp:ticketapp@db:5432/ticketapp
+      DEBUG: "False"
+      API_V1_PREFIX: /api/v1
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    networks:
+      - ticketapp-network
+    restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:8000/api/v1
+    container_name: ticketapp_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - ticketapp-network
+    restart: unless-stopped
+
+networks:
+  ticketapp-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

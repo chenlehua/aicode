@@ -1,0 +1,38 @@
+---
+name: Pre-commit
+
+on:
+  pull_request:
+  push:
+    branches: [main, master, develop]
+
+jobs:
+  pre-commit:
+    name: Pre-commit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better blame
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: w1/project-alpha/frontend/package-lock.json
+
+      - name: Install pre-commit
+        run: pip install pre-commit
+
+      - name: Install frontend dependencies
+        working-directory: ./w1/project-alpha/frontend
+        run: npm ci
+
+      - name: Run pre-commit
+        run: pre-commit run --all-files

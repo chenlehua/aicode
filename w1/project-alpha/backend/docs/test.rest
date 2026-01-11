@@ -1,0 +1,464 @@
+### Ticket Tag Management API - REST Client Tests
+### Base URL: http://localhost:8000/api/v1
+
+@baseUrl = http://localhost:8000
+@apiPrefix = /api/v1
+@contentType = application/json
+
+### Variables (will be set during tests)
+@tagId =
+@ticketId =
+
+###
+### ============================================
+### 1. Health & Root Endpoints
+### ============================================
+
+### Health Check
+GET {{baseUrl}}/health
+
+### Root Endpoint
+GET {{baseUrl}}/
+
+###
+### ============================================
+### 2. Tags API
+### ============================================
+
+### Get All Tags
+GET {{baseUrl}}{{apiPrefix}}/tags
+
+### Create Tag - Bug
+POST {{baseUrl}}{{apiPrefix}}/tags
+Content-Type: {{contentType}}
+
+{
+  "name": "bug1",
+  "color": "#ef4444"
+}
+
+### Create Tag - Feature
+POST {{baseUrl}}{{apiPrefix}}/tags
+Content-Type: {{contentType}}
+
+{
+  "name": "feature",
+  "color": "#22c55e"
+}
+
+### Create Tag - Urgent
+POST {{baseUrl}}{{apiPrefix}}/tags
+Content-Type: {{contentType}}
+
+{
+  "name": "urgent",
+  "color": "#f97316"
+}
+
+### Get Tag by ID (replace {{tagId}} with actual ID from previous response)
+GET {{baseUrl}}{{apiPrefix}}/tags/{{tagId}}
+
+### Update Tag (replace {{tagId}} with actual ID)
+PUT {{baseUrl}}{{apiPrefix}}/tags/{{tagId}}
+Content-Type: {{contentType}}
+
+{
+  "name": "critical-bug",
+  "color": "#dc2626"
+}
+
+### Delete Tag (replace {{tagId}} with actual ID)
+DELETE {{baseUrl}}{{apiPrefix}}/tags/{{tagId}}
+
+### Test: Create Tag with Duplicate Name (should fail)
+POST {{baseUrl}}{{apiPrefix}}/tags
+Content-Type: {{contentType}}
+
+{
+  "name": "bug",
+  "color": "#ff0000"
+}
+
+### Test: Create Tag with Invalid Color Format (should fail)
+POST {{baseUrl}}{{apiPrefix}}/tags
+Content-Type: {{contentType}}
+
+{
+  "name": "invalid-color",
+  "color": "red"
+}
+
+###
+### ============================================
+### 3. Tickets API - Basic CRUD
+### ============================================
+
+### Get All Tickets
+GET {{baseUrl}}{{apiPrefix}}/tickets
+
+### Get Tickets with Pagination
+GET {{baseUrl}}{{apiPrefix}}/tickets?page=1&page_size=10
+
+### Create Ticket - Without Tags
+POST {{baseUrl}}{{apiPrefix}}/tickets
+Content-Type: {{contentType}}
+
+{
+  "title": "修复登录问题",
+  "description": "用户无法正常登录系统，需要检查认证逻辑"
+}
+
+### Create Ticket - With Tags (replace tag IDs with actual IDs)
+POST {{baseUrl}}{{apiPrefix}}/tickets
+Content-Type: {{contentType}}
+
+{
+  "title": "实现用户注册功能",
+  "description": "需要添加用户注册页面和API",
+  "tag_ids": ["{{tagId}}"]
+}
+
+### Create Ticket - With Multiple Tags
+POST {{baseUrl}}{{apiPrefix}}/tickets
+Content-Type: {{contentType}}
+
+{
+  "title": "优化数据库查询性能",
+  "description": "某些查询响应时间过长，需要优化",
+  "tag_ids": ["{{tagId}}"]
+}
+
+### Get Ticket by ID (replace {{ticketId}} with actual ID)
+GET {{baseUrl}}{{apiPrefix}}/tickets/{{ticketId}}
+
+### Update Ticket (replace {{ticketId}} with actual ID)
+PUT {{baseUrl}}{{apiPrefix}}/tickets/{{ticketId}}
+Content-Type: {{contentType}}
+
+{
+  "title": "修复登录问题（紧急）",
+  "description": "更新后的描述：用户无法正常登录系统，已定位到问题",
+  "tag_ids": ["{{tagId}}"]
+}
+
+### Delete Ticket (replace {{ticketId}} with actual ID)
+DELETE {{baseUrl}}{{apiPrefix}}/tickets/{{ticketId}}
+
+### Test: Create Ticket with Empty Title (should fail)
+POST {{baseUrl}}{{apiPrefix}}/tickets
+Content-Type: {{contentType}}
+
+{
+  "title": "",
+  "description": "This should fail"
+}
+
+### Test: Create Ticket with Invalid Tag ID (should fail)
+POST {{baseUrl}}{{apiPrefix}}/tickets
+Content-Type: {{contentType}}
+
+{
+  "title": "Test Ticket",
+  "description": "Testing invalid tag",
+  "tag_ids": ["00000000-0000-0000-0000-000000000000"]
+}
+
+###
+### ============================================
+### 4. Tickets API - Status Management
+### ============================================
+
+### Complete Ticket (replace {{ticketId}} with actual ID)
+PATCH {{baseUrl}}{{apiPrefix}}/tickets/{{ticketId}}/complete
+
+### Reopen Ticket (replace {{ticketId}} with actual ID)
+PATCH {{baseUrl}}{{apiPrefix}}/tickets/{{ticketId}}/reopen
+
+### Test: Complete Non-existent Ticket (should fail)
+PATCH {{baseUrl}}{{apiPrefix}}/tickets/00000000-0000-0000-0000-000000000000/complete
+
+###
+### ============================================
+### 5. Tickets API - Tag Management
+### ============================================
+
+### Add Tags to Ticket (replace {{ticketId}} and tag IDs with actual IDs)
+POST {{baseUrl}}{{apiPrefix}}/tickets/{{ticketId}}/tags
+Content-Type: {{contentType}}
+
+{
+  "tag_ids": ["{{tagId}}"]
+}
+
+### Add Multiple Tags to Ticket
+POST {{baseUrl}}{{apiPrefix}}/tickets/{{ticketId}}/tags
+Content-Type: {{contentType}}
+
+{
+  "tag_ids": ["{{tagId}}"]
+}
+
+### Remove Tags from Ticket (replace {{ticketId}} and tag IDs with actual IDs)
+DELETE {{baseUrl}}{{apiPrefix}}/tickets/{{ticketId}}/tags
+Content-Type: {{contentType}}
+
+{
+  "tag_ids": ["{{tagId}}"]
+}
+
+### Test: Add Non-existent Tag to Ticket (should fail)
+POST {{baseUrl}}{{apiPrefix}}/tickets/{{ticketId}}/tags
+Content-Type: {{contentType}}
+
+{
+  "tag_ids": ["00000000-0000-0000-0000-000000000000"]
+}
+
+###
+### ============================================
+### 6. Tickets API - Filtering & Searching
+### ============================================
+
+### Filter Tickets by Status - Open
+GET {{baseUrl}}{{apiPrefix}}/tickets?status=open
+
+### Filter Tickets by Status - Completed
+GET {{baseUrl}}{{apiPrefix}}/tickets?status=completed
+
+### Filter Tickets by Tag IDs (replace tag IDs with actual IDs)
+GET {{baseUrl}}{{apiPrefix}}/tickets?tag_ids={{tagId}}
+
+### Filter Tickets by Multiple Tag IDs
+GET {{baseUrl}}{{apiPrefix}}/tickets?tag_ids={{tagId}}
+
+### Search Tickets by Title
+GET {{baseUrl}}{{apiPrefix}}/tickets?search=登录
+
+### Search Tickets by Title (case insensitive)
+GET {{baseUrl}}{{apiPrefix}}/tickets?search=LOGIN
+
+### Filter by Status and Search
+GET {{baseUrl}}{{apiPrefix}}/tickets?status=open&search=问题
+
+### Filter by Tag and Status
+GET {{baseUrl}}{{apiPrefix}}/tickets?tag_ids={{tagId}}&status=open
+
+### Filter by Tag, Status, and Search
+GET {{baseUrl}}{{apiPrefix}}/tickets?tag_ids={{tagId}}&status=open&search=修复
+
+###
+### ============================================
+### 7. Tickets API - Sorting
+### ============================================
+
+### Sort by Created At (descending - default)
+GET {{baseUrl}}{{apiPrefix}}/tickets?sort_by=created_at&sort_order=desc
+
+### Sort by Created At (ascending)
+GET {{baseUrl}}{{apiPrefix}}/tickets?sort_by=created_at&sort_order=asc
+
+### Sort by Updated At
+GET {{baseUrl}}{{apiPrefix}}/tickets?sort_by=updated_at&sort_order=desc
+
+### Sort by Completed At
+GET {{baseUrl}}{{apiPrefix}}/tickets?sort_by=completed_at&sort_order=desc
+
+### Sort by Title
+GET {{baseUrl}}{{apiPrefix}}/tickets?sort_by=title&sort_order=asc
+
+### Sort with Filtering
+GET {{baseUrl}}{{apiPrefix}}/tickets?status=open&sort_by=updated_at&sort_order=desc
+
+###
+### ============================================
+### 8. Tickets API - Pagination
+### ============================================
+
+### Page 1, 10 items per page
+GET {{baseUrl}}{{apiPrefix}}/tickets?page=1&page_size=10
+
+### Page 2, 5 items per page
+GET {{baseUrl}}{{apiPrefix}}/tickets?page=2&page_size=5
+
+### Pagination with Filtering
+GET {{baseUrl}}{{apiPrefix}}/tickets?status=open&page=1&page_size=20
+
+### Pagination with Sorting
+GET {{baseUrl}}{{apiPrefix}}/tickets?sort_by=created_at&sort_order=desc&page=1&page_size=10
+
+### Test: Invalid Page Number (should use default)
+GET {{baseUrl}}{{apiPrefix}}/tickets?page=0&page_size=10
+
+### Test: Invalid Page Size (should use default or max)
+GET {{baseUrl}}{{apiPrefix}}/tickets?page=1&page_size=200
+
+###
+### ============================================
+### 9. Complex Queries
+### ============================================
+
+### Complex Query: Filter by tag, status, search, sort, and paginate
+GET {{baseUrl}}{{apiPrefix}}/tickets?tag_ids={{tagId}}&status=open&search=问题&sort_by=updated_at&sort_order=desc&page=1&page_size=20
+
+### Get Completed Tickets Sorted by Completion Time
+GET {{baseUrl}}{{apiPrefix}}/tickets?status=completed&sort_by=completed_at&sort_order=desc
+
+### Get Open Tickets with Urgent Tag
+GET {{baseUrl}}{{apiPrefix}}/tickets?tag_ids={{tagId}}&status=open&sort_by=created_at&sort_order=desc
+
+###
+### ============================================
+### 10. Error Cases
+### ============================================
+
+### Get Non-existent Ticket (should return 404)
+GET {{baseUrl}}{{apiPrefix}}/tickets/00000000-0000-0000-0000-000000000000
+
+### Get Non-existent Tag (should return 404)
+GET {{baseUrl}}{{apiPrefix}}/tags/00000000-0000-0000-0000-000000000000
+
+### Update Non-existent Ticket (should return 404)
+PUT {{baseUrl}}{{apiPrefix}}/tickets/00000000-0000-0000-0000-000000000000
+Content-Type: {{contentType}}
+
+{
+  "title": "Non-existent Ticket",
+  "description": "This should fail"
+}
+
+### Delete Non-existent Ticket (should return 404)
+DELETE {{baseUrl}}{{apiPrefix}}/tickets/00000000-0000-0000-0000-000000000000
+
+### Update Non-existent Tag (should return 404)
+PUT {{baseUrl}}{{apiPrefix}}/tags/00000000-0000-0000-0000-000000000000
+Content-Type: {{contentType}}
+
+{
+  "name": "Non-existent Tag",
+  "color": "#000000"
+}
+
+### Delete Non-existent Tag (should return 404)
+DELETE {{baseUrl}}{{apiPrefix}}/tags/00000000-0000-0000-0000-000000000000
+
+### Invalid UUID Format (should return 422)
+GET {{baseUrl}}{{apiPrefix}}/tickets/invalid-uuid
+
+###
+### ============================================
+### 11. Workflow Tests
+### ============================================
+
+### Workflow 1: Create Tag -> Create Ticket with Tag -> Complete Ticket -> Reopen Ticket
+### Step 1: Create a tag
+POST {{baseUrl}}{{apiPrefix}}/tags
+Content-Type: {{contentType}}
+
+{
+  "name": "workflow-test",
+  "color": "#6366f1"
+}
+
+### Step 2: Create a ticket with the tag (use tag ID from Step 1)
+POST {{baseUrl}}{{apiPrefix}}/tickets
+Content-Type: {{contentType}}
+
+{
+  "title": "Workflow Test Ticket",
+  "description": "Testing complete workflow",
+  "tag_ids": ["{{tagId}}"]
+}
+
+### Step 3: Complete the ticket (use ticket ID from Step 2)
+PATCH {{baseUrl}}{{apiPrefix}}/tickets/{{ticketId}}/complete
+
+### Step 4: Verify ticket is completed
+GET {{baseUrl}}{{apiPrefix}}/tickets/{{ticketId}}
+
+### Step 5: Reopen the ticket
+PATCH {{baseUrl}}{{apiPrefix}}/tickets/{{ticketId}}/reopen
+
+### Step 6: Verify ticket is reopened
+GET {{baseUrl}}{{apiPrefix}}/tickets/{{ticketId}}
+
+### Workflow 2: Create Multiple Tags -> Create Ticket -> Add Tags -> Remove Tags
+### Step 1: Create tag 1
+POST {{baseUrl}}{{apiPrefix}}/tags
+Content-Type: {{contentType}}
+
+{
+  "name": "tag-1",
+  "color": "#ef4444"
+}
+
+### Step 2: Create tag 2
+POST {{baseUrl}}{{apiPrefix}}/tags
+Content-Type: {{contentType}}
+
+{
+  "name": "tag-2",
+  "color": "#22c55e"
+}
+
+### Step 3: Create ticket without tags
+POST {{baseUrl}}{{apiPrefix}}/tickets
+Content-Type: {{contentType}}
+
+{
+  "title": "Multi-tag Test Ticket",
+  "description": "Testing multiple tags"
+}
+
+### Step 4: Add tags to ticket (use ticket ID from Step 3 and tag IDs from Steps 1-2)
+POST {{baseUrl}}{{apiPrefix}}/tickets/{{ticketId}}/tags
+Content-Type: {{contentType}}
+
+{
+  "tag_ids": ["{{tagId}}"]
+}
+
+### Step 5: Verify tags were added
+GET {{baseUrl}}{{apiPrefix}}/tickets/{{ticketId}}
+
+### Step 6: Remove one tag (use ticket ID and tag ID)
+DELETE {{baseUrl}}{{apiPrefix}}/tickets/{{ticketId}}/tags
+Content-Type: {{contentType}}
+
+{
+  "tag_ids": ["{{tagId}}"]
+}
+
+### Step 7: Verify tag was removed
+GET {{baseUrl}}{{apiPrefix}}/tickets/{{ticketId}}
+
+### Workflow 3: Delete Tag -> Verify Tickets Are Updated
+### Step 1: Create tag
+POST {{baseUrl}}{{apiPrefix}}/tags
+Content-Type: {{contentType}}
+
+{
+  "name": "to-be-deleted",
+  "color": "#6b7280"
+}
+
+### Step 2: Create ticket with tag (use tag ID from Step 1)
+POST {{baseUrl}}{{apiPrefix}}/tickets
+Content-Type: {{contentType}}
+
+{
+  "title": "Ticket with Tag to Delete",
+  "description": "This ticket has a tag that will be deleted",
+  "tag_ids": ["{{tagId}}"]
+}
+
+### Step 3: Verify ticket has the tag
+GET {{baseUrl}}{{apiPrefix}}/tickets/{{ticketId}}
+
+### Step 4: Delete the tag (use tag ID from Step 1)
+DELETE {{baseUrl}}{{apiPrefix}}/tags/{{tagId}}
+
+### Step 5: Verify ticket no longer has the tag
+GET {{baseUrl}}{{apiPrefix}}/tickets/{{ticketId}}
+
+### Step 6: Verify tag is deleted
+GET {{baseUrl}}{{apiPrefix}}/tags/{{tagId}}

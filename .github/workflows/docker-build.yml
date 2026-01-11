@@ -1,0 +1,40 @@
+---
+name: Docker Build
+
+on:
+  push:
+    branches: [main, master]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  build:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./w1/project-alpha/backend
+          file: ./w1/project-alpha/backend/Dockerfile
+          push: false
+          tags: ticketapp-backend:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./w1/project-alpha/frontend
+          file: ./w1/project-alpha/frontend/Dockerfile
+          push: false
+          tags: ticketapp-frontend:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
