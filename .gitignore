@@ -170,3 +170,6 @@ w1/project-alpha/backend/.venv/
 w1/project-alpha/frontend/node_modules/
 w1/project-alpha/frontend/dist/
 w1/project-alpha/frontend/build/
+
+.cursor/
+.specify/
