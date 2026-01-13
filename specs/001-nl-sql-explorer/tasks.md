@@ -24,14 +24,14 @@
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 Create backend project structure with uv in w2/db_query/backend/
-- [ ] T002 Initialize pyproject.toml with dependencies (fastapi, sqlglot, openai, asyncpg, aiosqlite) in w2/db_query/backend/pyproject.toml
-- [ ] T003 [P] Create frontend project with Vite + React + TypeScript in w2/db_query/frontend/
-- [ ] T004 [P] Configure package.json with dependencies (@refinedev/core, @refinedev/antd, antd, @monaco-editor/react, tailwindcss) in w2/db_query/frontend/package.json
-- [ ] T005 [P] Configure TypeScript strict mode in w2/db_query/frontend/tsconfig.json
-- [ ] T006 [P] Configure Tailwind CSS in w2/db_query/frontend/tailwind.config.js
-- [ ] T007 [P] Create index.html entry point in w2/db_query/frontend/index.html
-- [ ] T008 [P] Configure Vite for development in w2/db_query/frontend/vite.config.ts
+- [x] T001 Create backend project structure with uv in w2/db_query/backend/
+- [x] T002 Initialize pyproject.toml with dependencies (fastapi, sqlglot, openai, asyncpg, aiosqlite) in w2/db_query/backend/pyproject.toml
+- [x] T003 [P] Create frontend project with Vite + React + TypeScript in w2/db_query/frontend/
+- [x] T004 [P] Configure package.json with dependencies (@refinedev/core, @refinedev/antd, antd, @monaco-editor/react, tailwindcss) in w2/db_query/frontend/package.json
+- [x] T005 [P] Configure TypeScript strict mode in w2/db_query/frontend/tsconfig.json
+- [x] T006 [P] Configure Tailwind CSS in w2/db_query/frontend/tailwind.config.js
+- [x] T007 [P] Create index.html entry point in w2/db_query/frontend/index.html
+- [x] T008 [P] Configure Vite for development in w2/db_query/frontend/vite.config.ts
 
 ---
 
@@ -43,21 +43,21 @@
 
 ### Backend Foundation
 
-- [ ] T009 Create CamelModel base class with Pydantic config in w2/db_query/backend/app/models/__init__.py
-- [ ] T010 Implement config module with env vars (DASHSCOPE_API_KEY, DB_PATH) in w2/db_query/backend/app/config.py
-- [ ] T011 Implement SQLite database initialization and connection in w2/db_query/backend/app/database.py
-- [ ] T012 [P] Create DatabaseConnection Pydantic models in w2/db_query/backend/app/models/database.py
-- [ ] T013 [P] Create ErrorResponse Pydantic model in w2/db_query/backend/app/models/error.py
-- [ ] T014 Create FastAPI app with CORS middleware in w2/db_query/backend/app/main.py
-- [ ] T015 Setup API router structure in w2/db_query/backend/app/routers/__init__.py
+- [x] T009 Create CamelModel base class with Pydantic config in w2/db_query/backend/app/models/__init__.py
+- [x] T010 Implement config module with env vars (DASHSCOPE_API_KEY, DB_PATH) in w2/db_query/backend/app/config.py
+- [x] T011 Implement SQLite database initialization and connection in w2/db_query/backend/app/database.py
+- [x] T012 [P] Create DatabaseConnection Pydantic models in w2/db_query/backend/app/models/database.py
+- [x] T013 [P] Create ErrorResponse Pydantic model in w2/db_query/backend/app/models/error.py
+- [x] T014 Create FastAPI app with CORS middleware in w2/db_query/backend/app/main.py
+- [x] T015 Setup API router structure in w2/db_query/backend/app/routers/__init__.py
 
 ### Frontend Foundation
 
-- [ ] T016 Create main.tsx entry point with React root in w2/db_query/frontend/src/main.tsx
-- [ ] T017 Create App.tsx with Refine provider setup in w2/db_query/frontend/src/App.tsx
-- [ ] T018 [P] Create TypeScript interfaces for all models in w2/db_query/frontend/src/types/index.ts
-- [ ] T019 [P] Create API service with base URL config in w2/db_query/frontend/src/services/api.ts
-- [ ] T020 [P] Setup global CSS with Tailwind imports in w2/db_query/frontend/src/index.css
+- [x] T016 Create main.tsx entry point with React root in w2/db_query/frontend/src/main.tsx
+- [x] T017 Create App.tsx with Refine provider setup in w2/db_query/frontend/src/App.tsx
+- [x] T018 [P] Create TypeScript interfaces for all models in w2/db_query/frontend/src/types/index.ts
+- [x] T019 [P] Create API service with base URL config in w2/db_query/frontend/src/services/api.ts
+- [x] T020 [P] Setup global CSS with Tailwind imports in w2/db_query/frontend/src/index.css
 
 **Checkpoint**: Foundation ready - user story implementation can now begin
 
