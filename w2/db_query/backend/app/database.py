@@ -7,6 +7,8 @@ from app.config import settings
 
 async def get_db() -> aiosqlite.Connection:
     """Get async SQLite database connection."""
+    # Ensure database directory exists
+    settings.db_path.parent.mkdir(parents=True, exist_ok=True)
     db = await aiosqlite.connect(str(settings.db_path))
     db.row_factory = aiosqlite.Row
     return db

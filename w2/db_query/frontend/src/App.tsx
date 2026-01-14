@@ -16,6 +16,8 @@ import { ConfigProvider } from 'antd';
 import '@refinedev/antd/dist/reset.css';
 
 import { API_BASE } from './services/api';
+import { HomePage } from './pages/HomePage';
+import { DatabasePage } from './pages/DatabasePage';
 
 function App() {
   return (
@@ -46,7 +48,8 @@ function App() {
                   </ThemedLayoutV2>
                 }
               >
-                <Route index element={<div>Home Page - Coming in Phase 3</div>} />
+                <Route index element={<HomePage />} />
+                <Route path="/databases/:name" element={<DatabasePage />} />
                 <Route path="*" element={<ErrorComponent />} />
               </Route>
             </Routes>

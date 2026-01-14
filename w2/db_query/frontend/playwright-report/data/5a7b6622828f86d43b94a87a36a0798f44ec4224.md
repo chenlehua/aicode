@@ -1,0 +1,53 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - complementary [ref=e5]:
+    - generic [ref=e6]:
+      - link "Refine Project" [ref=e8] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e9]:
+          - img [ref=e12]
+          - heading "Refine Project" [level=1] [ref=e16]
+      - menu [ref=e17]:
+        - menuitem "unordered-list Databases" [ref=e18] [cursor=pointer]:
+          - img "unordered-list" [ref=e19]:
+            - img [ref=e20]
+          - link "Databases" [ref=e23]:
+            - /url: /
+    - button "left" [ref=e25] [cursor=pointer]:
+      - img "left" [ref=e26]:
+        - img [ref=e27]
+  - main [ref=e30]:
+    - generic [ref=e33]:
+      - generic [ref=e35]:
+        - generic [ref=e38]: Add Database Connection
+        - generic [ref=e40]:
+          - generic [ref=e42]:
+            - generic "Database Name" [ref=e44]: "* Database Name"
+            - textbox "* Database Name" [ref=e48]:
+              - /placeholder: e.g., production_db
+          - generic [ref=e50]:
+            - generic "Connection URL" [ref=e52]: "* Connection URL"
+            - textbox "* Connection URL" [ref=e56]:
+              - /placeholder: postgres://user:password@host:port/database
+          - button "plus Add Database" [ref=e62] [cursor=pointer]:
+            - img "plus" [ref=e64]:
+              - img [ref=e65]
+            - generic [ref=e68]: Add Database
+      - generic [ref=e70]:
+        - generic [ref=e73]: Saved Databases
+        - list [ref=e78]:
+          - listitem [ref=e79] [cursor=pointer]:
+            - generic [ref=e80]:
+              - img "database" [ref=e82]:
+                - img [ref=e83]
+              - generic [ref=e85]:
+                - heading "testdb" [level=4] [ref=e86]
+                - generic [ref=e88]: postgres://postgres:****@localhost:5432/testdb
+            - list [ref=e89]:
+              - listitem [ref=e90]:
+                - button "delete" [ref=e91]:
+                  - img "delete" [ref=e93]:
+                    - img [ref=e94]
+```

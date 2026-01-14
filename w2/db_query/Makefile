@@ -1,4 +1,4 @@
-.PHONY: help install install-backend install-frontend dev dev-backend dev-frontend build build-backend build-frontend test test-backend test-frontend clean clean-backend clean-frontend lint lint-backend lint-frontend format format-backend format-frontend typecheck typecheck-backend typecheck-frontend
+.PHONY: help install install-backend install-frontend dev dev-backend dev-frontend build build-backend build-frontend test test-backend test-frontend clean clean-backend clean-frontend lint lint-backend lint-frontend format format-backend format-frontend typecheck typecheck-backend typecheck-frontend docker-up docker-down docker-logs docker-build docker-up-postgres docker-up-backend docker-up-frontend docker-down-postgres docker-down-backend docker-down-frontend docker-logs-postgres docker-logs-backend docker-logs-frontend docker-dev-up docker-dev-down docker-dev-logs docker-dev-up-postgres docker-dev-up-backend docker-dev-up-frontend docker-dev-down-postgres docker-dev-down-backend docker-dev-down-frontend docker-dev-logs-postgres docker-dev-logs-backend docker-dev-logs-frontend docker-clean
 
 # Variables
 BACKEND_DIR = backend
@@ -114,3 +114,86 @@ start: install ## Install dependencies and start development servers
 # Health check
 health: ## Check if backend is running
 	@curl -s http://localhost:$(BACKEND_PORT)/health || echo "Backend is not running"
+
+# Docker Compose
+docker-up: ## Start all services with docker-compose
+	docker-compose up -d
+
+docker-down: ## Stop all services
+	docker-compose down
+
+docker-logs: ## View logs from all services
+	docker-compose logs -f
+
+docker-build: ## Build all Docker images
+	docker-compose build
+
+# Docker Compose - Individual Services (Production)
+docker-up-postgres: ## Start only PostgreSQL service
+	docker-compose up -d postgres
+
+docker-up-backend: ## Start backend service (requires postgres)
+	docker-compose up -d backend
+
+docker-up-frontend: ## Start frontend service (requires backend)
+	docker-compose up -d frontend
+
+docker-down-postgres: ## Stop PostgreSQL service
+	docker-compose stop postgres
+
+docker-down-backend: ## Stop backend service
+	docker-compose stop backend
+
+docker-down-frontend: ## Stop frontend service
+	docker-compose stop frontend
+
+docker-logs-postgres: ## View PostgreSQL logs
+	docker-compose logs -f postgres
+
+docker-logs-backend: ## View backend logs
+	docker-compose logs -f backend
+
+docker-logs-frontend: ## View frontend logs
+	docker-compose logs -f frontend
+
+# Docker Compose - Development
+docker-dev-up: ## Start development services with docker-compose
+	docker-compose -f docker-compose.dev.yml up -d
+
+docker-dev-down: ## Stop development services
+	docker-compose -f docker-compose.dev.yml down
+
+docker-dev-logs: ## View logs from development services
+	docker-compose -f docker-compose.dev.yml logs -f
+
+# Docker Compose - Individual Services (Development)
+docker-dev-up-postgres: ## Start only PostgreSQL service (dev)
+	docker-compose -f docker-compose.dev.yml up -d postgres
+
+docker-dev-up-backend: ## Start backend service (dev, requires postgres)
+	docker-compose -f docker-compose.dev.yml up -d backend
+
+docker-dev-up-frontend: ## Start frontend service (dev, requires backend)
+	docker-compose -f docker-compose.dev.yml up -d frontend
+
+docker-dev-down-postgres: ## Stop PostgreSQL service (dev)
+	docker-compose -f docker-compose.dev.yml stop postgres
+
+docker-dev-down-backend: ## Stop backend service (dev)
+	docker-compose -f docker-compose.dev.yml stop backend
+
+docker-dev-down-frontend: ## Stop frontend service (dev)
+	docker-compose -f docker-compose.dev.yml stop frontend
+
+docker-dev-logs-postgres: ## View PostgreSQL logs (dev)
+	docker-compose -f docker-compose.dev.yml logs -f postgres
+
+docker-dev-logs-backend: ## View backend logs (dev)
+	docker-compose -f docker-compose.dev.yml logs -f backend
+
+docker-dev-logs-frontend: ## View frontend logs (dev)
+	docker-compose -f docker-compose.dev.yml logs -f frontend
+
+docker-clean: ## Remove all containers, volumes, and images
+	docker-compose down -v
+	docker-compose -f docker-compose.dev.yml down -v

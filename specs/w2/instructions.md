@@ -60,3 +60,9 @@ POST /api/v1/dbs/{name}/query/natural
 ## implementation
 
 在w2/db_query 目录下撰写Makefile来完成基本的工作，另外生成w2/db_query/fixtures/test.rest，使用vscode rest client来测试所有API。
+
+
+## testing
+仔细阅读 ./w2/db_query 下面的代码，然后运行后端和前端， 根据./w2/db_query/fixtures/test.rest 中的请求，使用curl测试后端已实现的路由；然后用playwright打开前端进行测试，任何测试问题，think ultra hard and fix
+
+claude mcp add playwright npx @playwright/mcp@latest

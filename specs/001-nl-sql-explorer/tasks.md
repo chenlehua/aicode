@@ -71,26 +71,26 @@
 
 ### Backend for User Story 1
 
-- [ ] T021 [P] [US1] Create TableMetadata and ColumnMetadata models in w2/db_query/backend/app/models/database.py
-- [ ] T022 [P] [US1] Create DatabaseMetadata aggregation model in w2/db_query/backend/app/models/database.py
-- [ ] T023 [US1] Implement connection service with asyncpg pool in w2/db_query/backend/app/services/connection.py
-- [ ] T024 [US1] Implement metadata extraction from information_schema in w2/db_query/backend/app/services/metadata.py
-- [ ] T025 [US1] Implement database CRUD operations in SQLite in w2/db_query/backend/app/services/database.py
-- [ ] T026 [US1] Create GET /api/v1/dbs endpoint in w2/db_query/backend/app/routers/databases.py
-- [ ] T027 [US1] Create PUT /api/v1/dbs/{name} endpoint in w2/db_query/backend/app/routers/databases.py
-- [ ] T028 [US1] Create GET /api/v1/dbs/{name} endpoint in w2/db_query/backend/app/routers/databases.py
-- [ ] T029 [US1] Create DELETE /api/v1/dbs/{name} endpoint in w2/db_query/backend/app/routers/databases.py
-- [ ] T030 [US1] Add error handling for connection failures in w2/db_query/backend/app/routers/databases.py
+- [X] T021 [P] [US1] Create TableMetadata and ColumnMetadata models in w2/db_query/backend/app/models/database.py
+- [X] T022 [P] [US1] Create DatabaseMetadata aggregation model in w2/db_query/backend/app/models/database.py
+- [X] T023 [US1] Implement connection service with asyncpg pool in w2/db_query/backend/app/services/connection.py
+- [X] T024 [US1] Implement metadata extraction from information_schema in w2/db_query/backend/app/services/metadata.py
+- [X] T025 [US1] Implement database CRUD operations in SQLite in w2/db_query/backend/app/services/database.py
+- [X] T026 [US1] Create GET /api/v1/dbs endpoint in w2/db_query/backend/app/routers/databases.py
+- [X] T027 [US1] Create PUT /api/v1/dbs/{name} endpoint in w2/db_query/backend/app/routers/databases.py
+- [X] T028 [US1] Create GET /api/v1/dbs/{name} endpoint in w2/db_query/backend/app/routers/databases.py
+- [X] T029 [US1] Create DELETE /api/v1/dbs/{name} endpoint in w2/db_query/backend/app/routers/databases.py
+- [X] T030 [US1] Add error handling for connection failures in w2/db_query/backend/app/routers/databases.py
 
 ### Frontend for User Story 1
 
-- [ ] T031 [P] [US1] Create DatabaseList component displaying saved connections in w2/db_query/frontend/src/components/DatabaseList.tsx
-- [ ] T032 [P] [US1] Create AddDatabaseForm component for URL input in w2/db_query/frontend/src/components/AddDatabaseForm.tsx
-- [ ] T033 [P] [US1] Create SchemaViewer component showing tables/views/columns in w2/db_query/frontend/src/components/SchemaViewer.tsx
-- [ ] T034 [US1] Create HomePage with database list and add form in w2/db_query/frontend/src/pages/HomePage.tsx
-- [ ] T035 [US1] Create DatabasePage showing selected database metadata in w2/db_query/frontend/src/pages/DatabasePage.tsx
-- [ ] T036 [US1] Implement database API hooks (list, create, get, delete) in w2/db_query/frontend/src/hooks/useDatabases.ts
-- [ ] T037 [US1] Add routing between HomePage and DatabasePage in w2/db_query/frontend/src/App.tsx
+- [X] T031 [P] [US1] Create DatabaseList component displaying saved connections in w2/db_query/frontend/src/components/DatabaseList.tsx
+- [X] T032 [P] [US1] Create AddDatabaseForm component for URL input in w2/db_query/frontend/src/components/AddDatabaseForm.tsx
+- [X] T033 [P] [US1] Create SchemaViewer component showing tables/views/columns in w2/db_query/frontend/src/components/SchemaViewer.tsx
+- [X] T034 [US1] Create HomePage with database list and add form in w2/db_query/frontend/src/pages/HomePage.tsx
+- [X] T035 [US1] Create DatabasePage showing selected database metadata in w2/db_query/frontend/src/pages/DatabasePage.tsx
+- [X] T036 [US1] Implement database API hooks (list, create, get, delete) in w2/db_query/frontend/src/hooks/useDatabases.ts
+- [X] T037 [US1] Add routing between HomePage and DatabasePage in w2/db_query/frontend/src/App.tsx
 
 **Checkpoint**: User Story 1 complete - users can connect to databases and view schema
 
@@ -104,27 +104,27 @@
 
 ### Backend for User Story 2
 
-- [ ] T038 [P] [US2] Create QueryRequest and QueryResult models in w2/db_query/backend/app/models/query.py
-- [ ] T039 [P] [US2] Create ColumnInfo model for result columns in w2/db_query/backend/app/models/query.py
-- [ ] T040 [P] [US2] Create QueryHistory model in w2/db_query/backend/app/models/history.py
-- [ ] T041 [US2] Implement SQL validation with sqlglot in w2/db_query/backend/app/services/query.py
-- [ ] T042 [US2] Implement SELECT-only enforcement in w2/db_query/backend/app/services/query.py
-- [ ] T043 [US2] Implement automatic LIMIT 1000 injection in w2/db_query/backend/app/services/query.py
-- [ ] T044 [US2] Implement query execution against PostgreSQL in w2/db_query/backend/app/services/query.py
-- [ ] T045 [US2] Implement query history storage in SQLite in w2/db_query/backend/app/services/history.py
-- [ ] T046 [US2] Create POST /api/v1/dbs/{name}/query endpoint in w2/db_query/backend/app/routers/databases.py
-- [ ] T047 [US2] Create GET /api/v1/dbs/{name}/history endpoint in w2/db_query/backend/app/routers/databases.py
-- [ ] T048 [US2] Add error handling for syntax errors and non-SELECT queries in w2/db_query/backend/app/routers/databases.py
+- [X] T038 [P] [US2] Create QueryRequest and QueryResult models in w2/db_query/backend/app/models/query.py
+- [X] T039 [P] [US2] Create ColumnInfo model for result columns in w2/db_query/backend/app/models/query.py
+- [X] T040 [P] [US2] Create QueryHistory model in w2/db_query/backend/app/models/history.py
+- [X] T041 [US2] Implement SQL validation with sqlglot in w2/db_query/backend/app/services/query.py
+- [X] T042 [US2] Implement SELECT-only enforcement in w2/db_query/backend/app/services/query.py
+- [X] T043 [US2] Implement automatic LIMIT 1000 injection in w2/db_query/backend/app/services/query.py
+- [X] T044 [US2] Implement query execution against PostgreSQL in w2/db_query/backend/app/services/query.py
+- [X] T045 [US2] Implement query history storage in SQLite in w2/db_query/backend/app/services/history.py
+- [X] T046 [US2] Create POST /api/v1/dbs/{name}/query endpoint in w2/db_query/backend/app/routers/databases.py
+- [X] T047 [US2] Create GET /api/v1/dbs/{name}/history endpoint in w2/db_query/backend/app/routers/databases.py
+- [X] T048 [US2] Add error handling for syntax errors and non-SELECT queries in w2/db_query/backend/app/routers/databases.py
 
 ### Frontend for User Story 2
 
-- [ ] T049 [P] [US2] Create SqlEditor component with Monaco Editor in w2/db_query/frontend/src/components/SqlEditor.tsx
-- [ ] T050 [P] [US2] Create ResultsTable component for query results in w2/db_query/frontend/src/components/ResultsTable.tsx
-- [ ] T051 [P] [US2] Create QueryHistory component showing past queries in w2/db_query/frontend/src/components/QueryHistory.tsx
-- [ ] T052 [US2] Implement query execution hook in w2/db_query/frontend/src/hooks/useQuery.ts
-- [ ] T053 [US2] Integrate SqlEditor and ResultsTable into DatabasePage in w2/db_query/frontend/src/pages/DatabasePage.tsx
-- [ ] T054 [US2] Add query execution button and loading states in w2/db_query/frontend/src/pages/DatabasePage.tsx
-- [ ] T055 [US2] Display SQL validation errors inline in w2/db_query/frontend/src/components/SqlEditor.tsx
+- [X] T049 [P] [US2] Create SqlEditor component with Monaco Editor in w2/db_query/frontend/src/components/SqlEditor.tsx
+- [X] T050 [P] [US2] Create ResultsTable component for query results in w2/db_query/frontend/src/components/ResultsTable.tsx
+- [X] T051 [P] [US2] Create QueryHistory component showing past queries in w2/db_query/frontend/src/components/QueryHistory.tsx
+- [X] T052 [US2] Implement query execution hook in w2/db_query/frontend/src/hooks/useQuery.ts
+- [X] T053 [US2] Integrate SqlEditor and ResultsTable into DatabasePage in w2/db_query/frontend/src/pages/DatabasePage.tsx
+- [X] T054 [US2] Add query execution button and loading states in w2/db_query/frontend/src/pages/DatabasePage.tsx
+- [X] T055 [US2] Display SQL validation errors inline in w2/db_query/frontend/src/components/SqlEditor.tsx
 
 **Checkpoint**: User Story 2 complete - users can execute SQL queries and view results
 
@@ -138,23 +138,23 @@
 
 ### Backend for User Story 3
 
-- [ ] T056 [P] [US3] Create NaturalQueryRequest model in w2/db_query/backend/app/models/query.py
-- [ ] T057 [P] [US3] Create GeneratedSQL response model in w2/db_query/backend/app/models/query.py
-- [ ] T058 [US3] Implement LLM client with DashScope configuration in w2/db_query/backend/app/services/llm.py
-- [ ] T059 [US3] Implement metadata-to-prompt formatting for LLM context in w2/db_query/backend/app/services/llm.py
-- [ ] T060 [US3] Implement SQL generation from natural language in w2/db_query/backend/app/services/llm.py
-- [ ] T061 [US3] Validate generated SQL with sqlglot in w2/db_query/backend/app/services/llm.py
-- [ ] T062 [US3] Create POST /api/v1/dbs/{name}/query/natural endpoint in w2/db_query/backend/app/routers/databases.py
-- [ ] T063 [US3] Add error handling for LLM failures in w2/db_query/backend/app/routers/databases.py
+- [X] T056 [P] [US3] Create NaturalQueryRequest model in w2/db_query/backend/app/models/query.py
+- [X] T057 [P] [US3] Create GeneratedSQL response model in w2/db_query/backend/app/models/query.py
+- [X] T058 [US3] Implement LLM client with DashScope configuration in w2/db_query/backend/app/services/llm.py
+- [X] T059 [US3] Implement metadata-to-prompt formatting for LLM context in w2/db_query/backend/app/services/llm.py
+- [X] T060 [US3] Implement SQL generation from natural language in w2/db_query/backend/app/services/llm.py
+- [X] T061 [US3] Validate generated SQL with sqlglot in w2/db_query/backend/app/services/llm.py
+- [X] T062 [US3] Create POST /api/v1/dbs/{name}/query/natural endpoint in w2/db_query/backend/app/routers/databases.py
+- [X] T063 [US3] Add error handling for LLM failures in w2/db_query/backend/app/routers/databases.py
 
 ### Frontend for User Story 3
 
-- [ ] T064 [P] [US3] Create NaturalLanguageInput component with prompt textarea in w2/db_query/frontend/src/components/NaturalLanguageInput.tsx
-- [ ] T065 [P] [US3] Create GeneratedSqlPreview component showing generated SQL in w2/db_query/frontend/src/components/GeneratedSqlPreview.tsx
-- [ ] T066 [US3] Implement natural language API hook in w2/db_query/frontend/src/hooks/useNaturalQuery.ts
-- [ ] T067 [US3] Integrate NL input with SqlEditor for edit-before-execute flow in w2/db_query/frontend/src/pages/DatabasePage.tsx
-- [ ] T068 [US3] Add tab switching between SQL Editor and Natural Language modes in w2/db_query/frontend/src/pages/DatabasePage.tsx
-- [ ] T069 [US3] Display LLM explanation alongside generated SQL in w2/db_query/frontend/src/components/GeneratedSqlPreview.tsx
+- [X] T064 [P] [US3] Create NaturalLanguageInput component with prompt textarea in w2/db_query/frontend/src/components/NaturalLanguageInput.tsx
+- [X] T065 [P] [US3] Create GeneratedSqlPreview component showing generated SQL in w2/db_query/frontend/src/components/GeneratedSqlPreview.tsx
+- [X] T066 [US3] Implement natural language API hook in w2/db_query/frontend/src/hooks/useNaturalQuery.ts
+- [X] T067 [US3] Integrate NL input with SqlEditor for edit-before-execute flow in w2/db_query/frontend/src/pages/DatabasePage.tsx
+- [X] T068 [US3] Add tab switching between SQL Editor and Natural Language modes in w2/db_query/frontend/src/pages/DatabasePage.tsx
+- [X] T069 [US3] Display LLM explanation alongside generated SQL in w2/db_query/frontend/src/components/GeneratedSqlPreview.tsx
 
 **Checkpoint**: All user stories complete - full feature is functional
 
@@ -164,13 +164,13 @@
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T070 [P] Add loading spinners and skeleton states in w2/db_query/frontend/src/components/
-- [ ] T071 [P] Add toast notifications for success/error feedback in w2/db_query/frontend/src/
-- [ ] T072 [P] Style all components with consistent Tailwind/Ant Design theme in w2/db_query/frontend/src/
-- [ ] T073 [P] Add keyboard shortcuts (Ctrl+Enter to execute) in w2/db_query/frontend/src/components/SqlEditor.tsx
-- [ ] T074 Add metadata refresh button to update cached schema in w2/db_query/frontend/src/pages/DatabasePage.tsx
-- [ ] T075 Add empty state handling (no databases, no results) in w2/db_query/frontend/src/
-- [ ] T076 Validate quickstart.md workflow end-to-end
+- [X] T070 [P] Add loading spinners and skeleton states in w2/db_query/frontend/src/components/
+- [X] T071 [P] Add toast notifications for success/error feedback in w2/db_query/frontend/src/
+- [X] T072 [P] Style all components with consistent Tailwind/Ant Design theme in w2/db_query/frontend/src/
+- [X] T073 [P] Add keyboard shortcuts (Ctrl+Enter to execute) in w2/db_query/frontend/src/components/SqlEditor.tsx
+- [X] T074 Add metadata refresh button to update cached schema in w2/db_query/frontend/src/pages/DatabasePage.tsx
+- [X] T075 Add empty state handling (no databases, no results) in w2/db_query/frontend/src/
+- [X] T076 Validate quickstart.md workflow end-to-end
 
 ---
 

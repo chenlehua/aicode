@@ -1,0 +1,71 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - complementary [ref=e5]:
+      - generic [ref=e6]:
+        - link "Refine Project" [ref=e8] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e9]:
+            - img [ref=e12]
+            - heading "Refine Project" [level=1] [ref=e16]
+        - menu [ref=e17]:
+          - menuitem "unordered-list Databases" [ref=e18] [cursor=pointer]:
+            - img "unordered-list" [ref=e19]:
+              - img [ref=e20]
+            - link "Databases" [ref=e23]:
+              - /url: /
+      - button "left" [ref=e25] [cursor=pointer]:
+        - img "left" [ref=e26]:
+          - img [ref=e27]
+    - main [ref=e30]:
+      - generic [ref=e32]:
+        - generic [ref=e33]:
+          - button "arrow-left Back to Databases" [ref=e34] [cursor=pointer]:
+            - img "arrow-left" [ref=e36]:
+              - img [ref=e37]
+            - generic [ref=e39]: Back to Databases
+          - button "reload Refresh Metadata" [ref=e40] [cursor=pointer]:
+            - img "reload" [ref=e42]:
+              - img [ref=e43]
+            - generic [ref=e45]: Refresh Metadata
+        - generic [ref=e46]:
+          - tablist [ref=e47]:
+            - generic [ref=e49]:
+              - tab "SQL Editor" [selected] [ref=e51] [cursor=pointer]
+              - tab "Natural Language" [ref=e53] [cursor=pointer]
+              - tab "Schema" [ref=e55] [cursor=pointer]
+              - tab "History" [ref=e57] [cursor=pointer]
+          - tabpanel "SQL Editor" [ref=e60]:
+            - generic [ref=e61]:
+              - generic [ref=e62]:
+                - generic [ref=e64]:
+                  - generic [ref=e65]: SQL Editor
+                  - generic [ref=e67]:
+                    - button "clear Clear" [ref=e68] [cursor=pointer]:
+                      - img "clear" [ref=e70]:
+                        - img [ref=e71]
+                      - generic [ref=e73]: Clear
+                    - button "play-circle Execute" [ref=e74] [cursor=pointer]:
+                      - img "play-circle" [ref=e76]:
+                        - img [ref=e77]
+                      - generic [ref=e80]: Execute
+                - code [ref=e85]:
+                  - generic [ref=e86]:
+                    - textbox "Editor content" [ref=e87]
+                    - textbox [ref=e88]
+                    - generic [ref=e93]: "1"
+                    - generic [ref=e99]: SELECT * FROM
+              - generic [ref=e101]:
+                - generic [ref=e104]: Results
+                - alert [ref=e106]:
+                  - img "info-circle" [ref=e107]:
+                    - img [ref=e108]
+                  - generic [ref=e110]:
+                    - generic [ref=e111]: No Results
+                    - generic [ref=e112]: Execute a query to see results here
+  - generic [ref=e113]:
+    - alert
+    - alert
+```

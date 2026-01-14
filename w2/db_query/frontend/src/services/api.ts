@@ -1,6 +1,8 @@
 /** API service configuration and base utilities. */
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.MODE === 'production' ? 'http://backend:8000' : 'http://localhost:8000');
 const API_V1_PREFIX = '/api/v1';
 
 export const API_BASE = `${API_BASE_URL}${API_V1_PREFIX}`;
