@@ -1,6 +1,7 @@
 """Database-related Pydantic models."""
 
 from datetime import datetime
+
 from pydantic import Field
 
 from app.models import CamelModel

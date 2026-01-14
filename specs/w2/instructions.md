@@ -54,3 +54,9 @@ POST /api/v1/dbs/{name}/query/natural
     "prompt": "查询用户表的所有信息"
 }
 ```
+
+
+
+## implementation
+
+在w2/db_query 目录下撰写Makefile来完成基本的工作，另外生成w2/db_query/fixtures/test.rest，使用vscode rest client来测试所有API。

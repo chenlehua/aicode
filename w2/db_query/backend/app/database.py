@@ -1,7 +1,6 @@
 """SQLite database connection and initialization."""
 
 import aiosqlite
-from pathlib import Path
 
 from app.config import settings
 
@@ -71,7 +70,8 @@ async def init_db() -> None:
             "CREATE INDEX IF NOT EXISTS idx_query_history_database ON query_history(database_name)"
         )
         await db.execute(
-            "CREATE INDEX IF NOT EXISTS idx_query_history_executed_at ON query_history(executed_at DESC)"
+            "CREATE INDEX IF NOT EXISTS idx_query_history_executed_at "
+            "ON query_history(executed_at DESC)"
         )
 
         await db.commit()

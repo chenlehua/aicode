@@ -6,7 +6,7 @@ import {
   ThemedSiderV2,
   useNotificationProvider,
 } from '@refinedev/antd';
-import { dataProvider } from '@refinedev/simple-rest';
+import dataProvider from '@refinedev/simple-rest';
 import routerProvider, {
   DocumentTitleHandler,
   UnsavedChangesNotifier,
@@ -46,10 +46,7 @@ function App() {
                   </ThemedLayoutV2>
                 }
               >
-                <Route
-                  index
-                  element={<div>Home Page - Coming in Phase 3</div>}
-                />
+                <Route index element={<div>Home Page - Coming in Phase 3</div>} />
                 <Route path="*" element={<ErrorComponent />} />
               </Route>
             </Routes>
