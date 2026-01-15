@@ -3,8 +3,8 @@
 export interface Database {
   name: string;
   url: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ColumnMetadata {

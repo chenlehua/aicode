@@ -25,8 +25,6 @@ export function AddDatabaseForm({ onSuccess }: AddDatabaseFormProps) {
       message.success(`数据库 "${values.name}" 添加成功`);
       form.resetFields();
       onSuccess?.();
-      // Reload to refresh database list
-      window.location.reload();
     } catch (error: unknown) {
       const err = error as { message?: string; error?: string };
       message.error(err.message || err.error || '添加数据库连接失败');

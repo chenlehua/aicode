@@ -24,8 +24,21 @@ export async function apiFetch<T>(endpoint: string, options?: RequestInit): Prom
     const error = await response.json().catch(() => ({
       error: 'Unknown',
       message: `HTTP ${response.status}: ${response.statusText}`,
+      status: response.status,
     }));
+    error.status = response.status;
     throw error;
+  }
+
+  // Handle 204 No Content response (e.g., DELETE operations)
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  // Check if response has content before parsing JSON
+  const contentLength = response.headers.get('content-length');
+  if (contentLength === '0') {
+    return undefined as T;
   }
 
   return response.json();

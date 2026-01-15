@@ -3,13 +3,15 @@
 @tailwind utilities;
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  line-height: 1.6;
   font-weight: 400;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  color-scheme: light;
+  color: #1f2937;
+  background-color: #f9fafb;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -19,13 +21,171 @@
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  background: linear-gradient(to bottom right, #f9fafb, #f3f4f6);
 }
 
 #root {
   width: 100%;
   min-height: 100vh;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Smooth transitions */
+* {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke,
+    opacity, box-shadow, transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Card hover effects */
+.ant-card {
+  transition: all 0.2s ease-in-out;
+}
+
+.ant-card:hover {
+  transform: translateY(-2px);
+}
+
+/* Button improvements */
+.ant-btn {
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.ant-btn-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border: none;
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+}
+
+.ant-btn-primary:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  box-shadow: 0 6px 8px -1px rgba(59, 130, 246, 0.4);
+  transform: translateY(-1px);
+}
+
+/* Tab improvements */
+.database-tabs .ant-tabs-tab {
+  border-radius: 8px 8px 0 0;
+  font-weight: 500;
+}
+
+.database-tabs .ant-tabs-tab:hover {
+  color: #3b82f6;
+}
+
+.database-tabs .ant-tabs-tab-active {
+  color: #3b82f6;
+}
+
+.database-tabs .ant-tabs-ink-bar {
+  background: linear-gradient(90deg, #3b82f6, #2563eb);
+  height: 3px;
+}
+
+/* Schema Collapse Styling */
+.schema-collapse .ant-collapse-header {
+  padding: 8px 12px !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+}
+
+.schema-collapse .ant-collapse-header:hover {
+  background: #f9fafb !important;
+}
+
+.schema-collapse .ant-collapse-item {
+  border: none !important;
+  margin-bottom: 2px;
+}
+
+.schema-collapse .ant-collapse-content-box {
+  padding: 0 !important;
+  padding-left: 24px !important;
+}
+
+/* Results Table Styling */
+.results-table .ant-table-thead > tr > th {
+  background: #f9fafb !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  padding: 10px 16px !important;
+}
+
+.results-table .ant-table-tbody > tr > td {
+  padding: 8px 16px !important;
+  border-bottom: 1px solid #f3f4f6 !important;
+}
+
+.results-table .ant-table-tbody > tr:hover > td {
+  background: #f9fafb !important;
+}
+
+/* Execute Button Gold Style */
+.ant-btn-primary[style*="d4a700"] {
+  color: #000 !important;
+  font-weight: 600;
+}
+
+.ant-btn-primary[style*="d4a700"]:hover {
+  background-color: #c49600 !important;
+  border-color: #c49600 !important;
+}
+
+/* Tab Styling */
+.ant-tabs-nav {
+  margin-bottom: 0 !important;
+}
+
+.ant-tabs-tab {
+  padding: 8px 0 !important;
+}
+
+.ant-tabs-tab-btn {
+  font-weight: 500 !important;
+}
+
+.ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #1f2937 !important;
+}
+
+.ant-tabs-ink-bar {
+  background: #d4a700 !important;
+  height: 2px !important;
+}
+
+/* Card hover effect disabled for internal cards */
+.ant-card.no-hover:hover {
+  transform: none;
+}
+
+/* Compact Input Styling */
+.ant-input-affix-wrapper {
+  border-radius: 6px !important;
+}
+
+/* Monaco Editor Container */
+.monaco-editor-container {
+  border-radius: 0 !important;
 }

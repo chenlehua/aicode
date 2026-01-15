@@ -80,3 +80,6 @@ claude mcp add playwright npx @playwright/mcp@latest
 请创建测试数据，保存到./w2/db_query/fixtures/test.sql,测试数据需要包含创建数据库，创建试图和表，能覆盖所有测试用例。
 
 ./w2/db_query/fixtures/natural_language_test.md
+
+
+speckit.anlyze仔细 review ./w2/db_query代码，删除不用的代码，添加更多的unit test,以及寻找改进的机会。

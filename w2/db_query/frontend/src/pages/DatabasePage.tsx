@@ -1,48 +1,40 @@
 /** Database page showing selected database metadata. */
 
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Button, Spin, Alert, Card, Tabs, message } from 'antd';
+import { useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { Button, Spin, Alert, Tabs, message, Typography, Input } from 'antd';
 import {
-  ArrowLeftOutlined,
+  SearchOutlined,
   PlayCircleOutlined,
-  ClearOutlined,
-  ThunderboltOutlined,
   ReloadOutlined,
+  DatabaseOutlined,
 } from '@ant-design/icons';
 import { useDatabase } from '../hooks/useDatabases';
 import { useQuery } from '../hooks/useQuery';
 import { useNaturalQuery } from '../hooks/useNaturalQuery';
-import { SchemaViewer } from '../components/SchemaViewer';
+import { SchemaBrowser } from '../components/SchemaBrowser';
 import { SqlEditor } from '../components/SqlEditor';
 import { ResultsTable } from '../components/ResultsTable';
-import { QueryHistory } from '../components/QueryHistory';
 import { NaturalLanguageInput } from '../components/NaturalLanguageInput';
 import { GeneratedSqlPreview } from '../components/GeneratedSqlPreview';
 import { apiFetch } from '../services/api';
-import type { QueryHistoryList } from '../types';
+
+const { Text } = Typography;
 
 export function DatabasePage() {
   const { name } = useParams<{ name: string }>();
-  const navigate = useNavigate();
   const { data: database, isLoading, isError } = useDatabase(name || '');
   const [sql, setSql] = useState('SELECT * FROM ');
   const [naturalPrompt, setNaturalPrompt] = useState('');
-  const [activeTab, setActiveTab] = useState('query');
-  const [history, setHistory] = useState<QueryHistoryList | null>(null);
-  const [historyLoading, setHistoryLoading] = useState(false);
+  const [queryTab, setQueryTab] = useState<'manual' | 'natural'>('manual');
+  const [schemaSearch, setSchemaSearch] = useState('');
 
   const {
     executeQuery,
     loading: queryLoading,
     result,
     error,
-  } = useQuery(name || '', {
-    onSuccess: () => {
-      // Refresh history after successful query
-      loadHistory();
-    },
-  });
+  } = useQuery(name || '');
 
   const {
     generateSQL,
@@ -51,9 +43,9 @@ export function DatabasePage() {
     error: nlError,
   } = useNaturalQuery(name || '', {
     onSuccess: (result) => {
-      // Auto-switch to SQL editor tab when SQL is generated
-      setActiveTab('query');
-      // Optionally auto-fill the SQL editor
+      // Auto-switch to manual SQL tab when SQL is generated
+      setQueryTab('manual');
+      // Auto-fill the SQL editor
       setSql(result.sql);
       message.success('SQL generated successfully');
     },
@@ -62,36 +54,15 @@ export function DatabasePage() {
     },
   });
 
-  const loadHistory = async () => {
-    if (!name) return;
-    setHistoryLoading(true);
-    try {
-      const data = await apiFetch<QueryHistoryList>(`/dbs/${name}/history?page=1&pageSize=10`);
-      setHistory(data);
-    } catch (err) {
-      console.error('Failed to load history:', err);
-    } finally {
-      setHistoryLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (name) {
-      loadHistory();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [name]);
-
   const handleExecute = () => {
     if (sql.trim()) {
       executeQuery(sql);
     }
   };
 
-  const handleReplay = (replaySql: string) => {
-    setSql(replaySql);
-    setActiveTab('query');
-    executeQuery(replaySql);
+  const handleTableClick = (tableName: string) => {
+    setSql(`SELECT * FROM ${tableName} LIMIT 100;`);
+    setQueryTab('manual');
   };
 
   const handleGenerateSQL = () => {
@@ -102,7 +73,7 @@ export function DatabasePage() {
 
   const handleUseGeneratedSQL = (generatedSql: string) => {
     setSql(generatedSql);
-    setActiveTab('query');
+    setQueryTab('manual');
     message.info('SQL loaded into editor');
   };
 
@@ -148,123 +119,198 @@ export function DatabasePage() {
     );
   }
 
-  const tabItems = [
-    {
-      key: 'query',
-      label: 'SQL Editor',
-      children: (
-        <div className="space-y-4">
-          <Card
-            title="SQL Editor"
-            extra={
-              <div className="flex gap-2">
-                <Button icon={<ClearOutlined />} onClick={() => setSql('')} disabled={queryLoading}>
-                  Clear
-                </Button>
-                <Button
-                  type="primary"
-                  icon={<PlayCircleOutlined />}
-                  onClick={handleExecute}
-                  loading={queryLoading}
-                  disabled={!sql.trim()}
-                >
-                  Execute
-                </Button>
-              </div>
-            }
+  const resultRowCount = result?.rowCount || 0;
+
+  return (
+    <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
+      {/* Top Bar - Split between Schema Header and Stats */}
+      <div className="bg-white border-b border-gray-200 flex items-stretch">
+        {/* Left: Schema Header (aligned with schema browser width) */}
+        <div className="w-72 border-r border-gray-200 p-3 flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <DatabaseOutlined className="text-gray-600" />
+            <Text strong className="text-sm text-gray-800 uppercase">
+              {database.name}
+            </Text>
+          </div>
+          <Button
+            size="small"
+            icon={<ReloadOutlined />}
+            onClick={handleRefreshMetadata}
+            loading={isLoading}
+            className="font-semibold text-xs"
           >
-            <SqlEditor
-              value={sql}
-              onChange={setSql}
-              error={error || undefined}
-              height="200px"
-              onExecute={handleExecute}
-            />
-          </Card>
-          <Card title="Results">
-            <ResultsTable result={result} loading={queryLoading} />
-          </Card>
+            REFRESH
+          </Button>
         </div>
-      ),
-    },
-    {
-      key: 'natural',
-      label: 'Natural Language',
-      children: (
-        <div className="space-y-4">
-          <Card
-            title="Natural Language Query"
-            extra={
-              <Button
-                type="primary"
-                icon={<ThunderboltOutlined />}
-                onClick={handleGenerateSQL}
-                loading={nlLoading}
-                disabled={!naturalPrompt.trim()}
-              >
-                Generate SQL
-              </Button>
-            }
-          >
-            <NaturalLanguageInput
-              value={naturalPrompt}
-              onChange={setNaturalPrompt}
-              disabled={nlLoading}
+
+        {/* Right: Statistics */}
+        <div className="flex-1 flex items-center">
+          <div className="flex-1 flex items-center justify-center border-r border-gray-200 py-3">
+            <div className="text-center">
+              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">TABLES</div>
+              <div className="text-2xl font-bold text-gray-800">
+                {database.metadata.tableCount}
+              </div>
+            </div>
+          </div>
+          <div className="flex-1 flex items-center justify-center border-r border-gray-200 py-3">
+            <div className="text-center">
+              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">VIEWS</div>
+              <div className="text-2xl font-bold text-gray-800">
+                {database.metadata.viewCount}
+              </div>
+            </div>
+          </div>
+          <div className="flex-1 flex items-center justify-center border-r border-gray-200 py-3">
+            <div className="text-center">
+              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">ROWS</div>
+              <div className={`text-2xl font-bold ${resultRowCount > 0 ? 'text-green-600' : 'text-gray-800'}`}>
+                {resultRowCount}
+              </div>
+            </div>
+          </div>
+          <div className="flex-1 flex items-center justify-center py-3">
+            <div className="text-center">
+              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">TIME</div>
+              <div className={`text-2xl font-bold ${result ? 'text-amber-500' : 'text-gray-800'}`}>
+                {result ? `${result.executionTimeMs}ms` : '-'}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left: Schema Browser */}
+        <div className="w-72 bg-white border-r border-gray-200 flex flex-col overflow-hidden">
+          {/* Search */}
+          <div className="p-3 border-b border-gray-100">
+            <Input
+              placeholder="Search tables, columns..."
+              prefix={<SearchOutlined className="text-gray-400" />}
+              value={schemaSearch}
+              onChange={(e) => setSchemaSearch(e.target.value)}
+              allowClear
+              size="small"
+              className="rounded"
             />
-            {nlError && (
+          </div>
+          {/* Schema Content */}
+          <div className="flex-1 overflow-auto p-3">
+            <SchemaBrowser
+              metadata={database.metadata}
+              onTableClick={handleTableClick}
+              searchText={schemaSearch}
+            />
+          </div>
+        </div>
+
+        {/* Right: Query Editor & Results */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Query Editor Header */}
+          <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+            <Text strong className="text-sm text-gray-700 uppercase tracking-wide">
+              QUERY EDITOR
+            </Text>
+            <Button
+              type="primary"
+              icon={<PlayCircleOutlined />}
+              onClick={queryTab === 'manual' ? handleExecute : handleGenerateSQL}
+              loading={queryTab === 'manual' ? queryLoading : nlLoading}
+              disabled={queryTab === 'manual' ? !sql.trim() : !naturalPrompt.trim()}
+              className="font-semibold rounded-lg px-6"
+              style={{ backgroundColor: '#d4a700', borderColor: '#d4a700' }}
+            >
+              EXECUTE
+            </Button>
+          </div>
+
+          {/* Tabs */}
+          <div className="bg-white border-b border-gray-200">
+            <Tabs
+              activeKey={queryTab}
+              onChange={(key) => setQueryTab(key as 'manual' | 'natural')}
+              className="px-4"
+              items={[
+                {
+                  key: 'manual',
+                  label: <span className="font-semibold text-xs uppercase">MANUAL SQL</span>,
+                },
+                {
+                  key: 'natural',
+                  label: <span className="font-semibold text-xs uppercase">NATURAL LANGUAGE</span>,
+                },
+              ]}
+            />
+          </div>
+
+          {/* Editor Content */}
+          {queryTab === 'manual' ? (
+            <div className="bg-gray-900 flex-shrink-0" style={{ height: '200px' }}>
+              <SqlEditor
+                value={sql}
+                onChange={setSql}
+                error={error || undefined}
+                height="200px"
+                onExecute={handleExecute}
+              />
+            </div>
+          ) : (
+            <div className="bg-white flex-shrink-0 p-4 border-b border-gray-200">
+              <NaturalLanguageInput
+                value={naturalPrompt}
+                onChange={setNaturalPrompt}
+                disabled={nlLoading}
+                placeholder="DESCRIBE YOUR QUERY IN NATURAL LANGUAGE (English or Chinese)"
+              />
+            </div>
+          )}
+
+          {/* Natural Language Error */}
+          {nlError && queryTab === 'natural' && (
+            <div className="bg-white px-4 py-2 border-b border-gray-200">
               <Alert
-                message="Generation Error"
+                message="Generation Failed"
                 description={nlError}
                 type="error"
                 showIcon
-                className="mt-4"
+                className="rounded-lg"
               />
-            )}
-          </Card>
-          <GeneratedSqlPreview
-            generated={generatedSQL}
-            onUseSql={handleUseGeneratedSQL}
-            loading={nlLoading}
-          />
-        </div>
-      ),
-    },
-    {
-      key: 'schema',
-      label: 'Schema',
-      children: <SchemaViewer metadata={database.metadata} />,
-    },
-    {
-      key: 'history',
-      label: 'History',
-      children: (
-        <QueryHistory
-          items={history?.items || []}
-          onReplay={handleReplay}
-          loading={historyLoading}
-        />
-      ),
-    },
-  ];
+            </div>
+          )}
 
-  return (
-    <div className="p-6">
-      <div className="mb-4 flex justify-between items-center">
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/')} type="text">
-          Back to Databases
-        </Button>
-        {database && (
-          <Button icon={<ReloadOutlined />} onClick={handleRefreshMetadata} loading={isLoading}>
-            Refresh Metadata
-          </Button>
-        )}
+          {/* Generated SQL Preview */}
+          {generatedSQL && queryTab === 'natural' && (
+            <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+              <GeneratedSqlPreview
+                generated={generatedSQL}
+                onUseSql={handleUseGeneratedSQL}
+                loading={nlLoading}
+              />
+            </div>
+          )}
+
+          {/* SQL Error */}
+          {error && queryTab === 'manual' && (
+            <div className="bg-white px-4 py-2 border-b border-gray-200">
+              <Alert
+                message="SQL Error"
+                description={error}
+                type="error"
+                showIcon
+                className="rounded-lg"
+              />
+            </div>
+          )}
+
+          {/* Results Area */}
+          <div className="flex-1 overflow-auto bg-white">
+            <ResultsTable result={result} loading={queryLoading} />
+          </div>
+        </div>
       </div>
-      <Tabs
-        items={tabItems}
-        activeKey={activeTab}
-        onChange={setActiveTab}
-        defaultActiveKey="query"
-      />
     </div>
   );
 }

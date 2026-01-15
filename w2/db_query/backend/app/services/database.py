@@ -112,6 +112,8 @@ class DatabaseService:
             return DatabaseWithMetadata(
                 name=db_row["name"],
                 url=db_row["url"],
+                created_at=datetime.fromisoformat(db_row["created_at"]),
+                updated_at=datetime.fromisoformat(db_row["updated_at"]),
                 metadata=metadata,
             )
         finally:
@@ -122,7 +124,8 @@ class DatabaseService:
         """Create or update a database connection and fetch metadata."""
         db = await get_db()
         try:
-            now = datetime.now().isoformat()
+            now = datetime.now()
+            now_iso = now.isoformat()
 
             # Upsert database connection
             await db.execute(
@@ -133,7 +136,7 @@ class DatabaseService:
                     url = excluded.url,
                     updated_at = excluded.updated_at
                 """,
-                (name, url, now, now),
+                (name, url, now_iso, now_iso),
             )
 
             # Fetch and cache metadata
@@ -144,7 +147,7 @@ class DatabaseService:
 
             # Insert new metadata
             for table in metadata.tables + metadata.views:
-                table_type_str = "table" if table.table_type == "BASE TABLE" else "view"
+                # table.table_type is already "table" or "view" from MetadataService
                 await db.execute(
                     """
                     INSERT INTO metadata (
@@ -154,7 +157,7 @@ class DatabaseService:
                     (
                         name,
                         table.table_name,
-                        table_type_str,
+                        table.table_type,
                         MetadataService.serialize_table_metadata(table),
                         table.fetched_at.isoformat(),
                     ),
@@ -165,6 +168,8 @@ class DatabaseService:
             return DatabaseWithMetadata(
                 name=name,
                 url=url,
+                created_at=now,
+                updated_at=now,
                 metadata=metadata,
             )
         finally:

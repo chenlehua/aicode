@@ -153,14 +153,22 @@ export function SchemaViewer({ metadata }: SchemaViewerProps) {
 
   return (
     <Card
-      title={`Schema: ${metadata.databaseName}`}
+      className="rounded-xl shadow-sm border-0"
+      title={
+        <div className="flex items-center gap-2">
+          <span className="text-lg font-semibold">数据库结构</span>
+          <span className="text-xs text-gray-500 font-normal">
+            ({metadata.tableCount} 表, {metadata.viewCount} 视图)
+          </span>
+        </div>
+      }
       extra={
         <span className="text-xs text-gray-500">
-          Fetched: {new Date(metadata.fetchedAt).toLocaleString()}
+          更新时间: {new Date(metadata.fetchedAt).toLocaleString()}
         </span>
       }
     >
-      <Tabs items={tabItems} />
+      <Tabs items={tabItems} size="large" />
     </Card>
   );
 }

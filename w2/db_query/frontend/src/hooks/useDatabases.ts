@@ -12,37 +12,25 @@ export function useDatabases() {
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function fetchDatabases() {
-      try {
-        setIsLoading(true);
-        setIsError(false);
-        const result = await apiFetch<Database[]>('/dbs');
-        if (!cancelled) {
-          setData(result);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setIsError(true);
-          console.error('Failed to fetch databases:', error);
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      }
+  const fetchDatabases = async () => {
+    try {
+      setIsLoading(true);
+      setIsError(false);
+      const result = await apiFetch<Database[]>('/dbs');
+      setData(result);
+    } catch (error) {
+      setIsError(true);
+      console.error('Failed to fetch databases:', error);
+    } finally {
+      setIsLoading(false);
     }
+  };
 
+  useEffect(() => {
     fetchDatabases();
-
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
-  return { data, isLoading, isError };
+  return { data, isLoading, isError, refetch: fetchDatabases };
 }
 
 /**

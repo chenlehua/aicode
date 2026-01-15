@@ -1,12 +1,56 @@
 /** Component for displaying query results in a table. */
 
-import { Table, Tag, Alert, Spin, Skeleton } from 'antd';
+import { Table, Tag, Alert, Spin, Skeleton, Button, message } from 'antd';
+import { DownloadOutlined } from '@ant-design/icons';
 import type { QueryResult } from '../types';
 
 interface ResultsTableProps {
   result: QueryResult | null;
   loading?: boolean;
 }
+
+// Export utilities
+const exportToCSV = (result: QueryResult) => {
+  const headers = result.columns.map(col => col.name);
+  const rows = result.rows.map(row => 
+    result.columns.map((_, idx) => {
+      const value = row[idx];
+      if (value === null) return '';
+      if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
+        return `"${value.replace(/"/g, '""')}"`;
+      }
+      return String(value);
+    }).join(',')
+  );
+  const csv = [headers.join(','), ...rows].join('\n');
+  downloadFile(csv, 'query_results.csv', 'text/csv');
+  message.success('CSV exported successfully');
+};
+
+const exportToJSON = (result: QueryResult) => {
+  const data = result.rows.map(row => {
+    const obj: Record<string, unknown> = {};
+    result.columns.forEach((col, idx) => {
+      obj[col.name] = row[idx];
+    });
+    return obj;
+  });
+  const json = JSON.stringify(data, null, 2);
+  downloadFile(json, 'query_results.json', 'application/json');
+  message.success('JSON exported successfully');
+};
+
+const downloadFile = (content: string, filename: string, mimeType: string) => {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
 
 export function ResultsTable({ result, loading }: ResultsTableProps) {
   if (loading) {
@@ -23,34 +67,41 @@ export function ResultsTable({ result, loading }: ResultsTableProps) {
 
   if (!result) {
     return (
-      <Alert
-        message="No Results"
-        description="Execute a query to see results here"
-        type="info"
-        showIcon
-      />
+      <div className="p-4">
+        <div className="border-b border-gray-200 pb-3 mb-4">
+          <span className="text-sm font-semibold text-gray-700 uppercase">RESULTS</span>
+        </div>
+        <Alert
+          message="No Results"
+          description="Execute a query to see results here"
+          type="info"
+          showIcon
+        />
+      </div>
     );
   }
 
   if (result.rowCount === 0) {
     return (
-      <Alert
-        message="No Rows"
-        description="Query executed successfully but returned no rows"
-        type="info"
-        showIcon
-      />
+      <div className="p-4">
+        <div className="border-b border-gray-200 pb-3 mb-4 flex justify-between items-center">
+          <span className="text-sm font-semibold text-gray-700 uppercase">
+            RESULTS - 0 ROWS - {result.executionTimeMs}MS
+          </span>
+        </div>
+        <Alert
+          message="No Rows"
+          description="Query executed successfully but returned no rows"
+          type="info"
+          showIcon
+        />
+      </div>
     );
   }
 
   const columns = result.columns.map((col, index) => ({
     title: (
-      <div>
-        <span className="font-semibold">{col.name}</span>
-        <Tag color="blue" className="ml-2 text-xs">
-          {col.dataType}
-        </Tag>
-      </div>
+      <span className="font-semibold text-gray-700 uppercase text-xs">{col.name}</span>
     ),
     dataIndex: index,
     key: col.name,
@@ -76,25 +127,56 @@ export function ResultsTable({ result, loading }: ResultsTableProps) {
   }));
 
   return (
-    <div>
-      <div className="mb-2 flex justify-between items-center">
-        <div>
-          <Tag color="green">{result.rowCount} rows</Tag>
-          {result.truncated && <Tag color="orange">Results truncated (max 1000 rows)</Tag>}
-          <Tag color="blue">{result.executionTimeMs}ms</Tag>
+    <div className="h-full flex flex-col">
+      {/* Results Header */}
+      <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center bg-white">
+        <span className="text-sm font-semibold text-gray-700 uppercase">
+          RESULTS - {result.rowCount} ROWS - {result.executionTimeMs}MS
+        </span>
+        <div className="flex gap-2">
+          <Button
+            size="small"
+            icon={<DownloadOutlined />}
+            onClick={() => exportToCSV(result)}
+            className="font-semibold text-xs"
+          >
+            EXPORT CSV
+          </Button>
+          <Button
+            size="small"
+            icon={<DownloadOutlined />}
+            onClick={() => exportToJSON(result)}
+            className="font-semibold text-xs"
+          >
+            EXPORT JSON
+          </Button>
         </div>
       </div>
-      <Table
-        columns={columns}
-        dataSource={dataSource}
-        pagination={{
-          pageSize: 50,
-          showSizeChanger: true,
-          showTotal: (total) => `Total ${total} rows`,
-        }}
-        scroll={{ x: 'max-content', y: 400 }}
-        size="small"
-      />
+
+      {/* Truncation Warning */}
+      {result.truncated && (
+        <div className="px-4 py-2 bg-orange-50 border-b border-orange-200">
+          <span className="text-xs text-orange-700">Results truncated (max 1000 rows)</span>
+        </div>
+      )}
+
+      {/* Table */}
+      <div className="flex-1 overflow-auto">
+        <Table
+          columns={columns}
+          dataSource={dataSource}
+          pagination={{
+            pageSize: 50,
+            showSizeChanger: true,
+            showTotal: (total) => `Total ${total} rows`,
+            pageSizeOptions: ['10', '25', '50', '100'],
+            className: 'px-4 py-2',
+          }}
+          scroll={{ x: 'max-content' }}
+          size="small"
+          className="results-table"
+        />
+      </div>
     </div>
   );
 }

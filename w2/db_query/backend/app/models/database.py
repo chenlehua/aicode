@@ -59,4 +59,6 @@ class DatabaseWithMetadata(CamelModel):
 
     name: str
     url: str
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
     metadata: DatabaseMetadata

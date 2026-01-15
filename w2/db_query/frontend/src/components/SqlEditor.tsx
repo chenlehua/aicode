@@ -84,7 +84,7 @@ export function SqlEditor({
           formatOnType: true,
           wordWrap: 'on',
         }}
-        theme="vs"
+        theme="vs-dark"
       />
       {error && (
         <Alert

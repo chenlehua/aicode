@@ -14,7 +14,7 @@ interface NaturalLanguageInputProps {
 export function NaturalLanguageInput({
   value,
   onChange,
-  placeholder = 'Describe what you want to query in natural language...',
+  placeholder = 'DESCRIBE YOUR QUERY IN NATURAL LANGUAGE (English or Chinese)',
   disabled = false,
 }: NaturalLanguageInputProps) {
   return (
@@ -23,10 +23,11 @@ export function NaturalLanguageInput({
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       disabled={disabled}
-      rows={4}
+      rows={8}
       showCount
       maxLength={1000}
-      style={{ fontFamily: 'inherit' }}
+      className="rounded-lg font-mono text-sm"
+      style={{ fontFamily: 'inherit', resize: 'none' }}
     />
   );
 }
