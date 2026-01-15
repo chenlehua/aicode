@@ -41,14 +41,14 @@ export function DatabaseList({ onSelect }: DatabaseListProps) {
 
   if (!databases || databases.length === 0) {
     return (
-      <Card>
-        <Empty description="No databases configured" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+      <Card title="数据库连接列表">
+        <Empty description="暂无数据库连接" image={Empty.PRESENTED_IMAGE_SIMPLE} />
       </Card>
     );
   }
 
   return (
-    <Card title="Saved Databases">
+    <Card title="数据库连接列表">
       <List
         dataSource={databases}
         renderItem={(db) => (

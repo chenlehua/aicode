@@ -66,3 +66,17 @@ POST /api/v1/dbs/{name}/query/natural
 仔细阅读 ./w2/db_query 下面的代码，然后运行后端和前端， 根据./w2/db_query/fixtures/test.rest 中的请求，使用curl测试后端已实现的路由；然后用playwright打开前端进行测试，任何测试问题，think ultra hard and fix
 
 claude mcp add playwright npx @playwright/mcp@latest
+
+
+## db migration 
+
+
+## fronted
+
+请调整前端页面布局，主页面显示所有连接的列表，右上角有新增数据库连接的按钮。
+
+## test
+
+请创建测试数据，保存到./w2/db_query/fixtures/test.sql,测试数据需要包含创建数据库，创建试图和表，能覆盖所有测试用例。
+
+./w2/db_query/fixtures/natural_language_test.md

@@ -1,7 +1,7 @@
 /** Component for adding a new database connection. */
 
 import { useState } from 'react';
-import { Card, Form, Input, Button, message } from 'antd';
+import { Form, Input, Button, message } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { apiFetch } from '../services/api';
 
@@ -22,56 +22,54 @@ export function AddDatabaseForm({ onSuccess }: AddDatabaseFormProps) {
         method: 'PUT',
         body: JSON.stringify({ url: values.url }),
       });
-      message.success(`Database "${values.name}" added successfully`);
+      message.success(`数据库 "${values.name}" 添加成功`);
       form.resetFields();
       onSuccess?.();
       // Reload to refresh database list
       window.location.reload();
     } catch (error: unknown) {
       const err = error as { message?: string; error?: string };
-      message.error(err.message || err.error || 'Failed to add database connection');
+      message.error(err.message || err.error || '添加数据库连接失败');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Card title="Add Database Connection">
-      <Form form={form} layout="vertical" onFinish={handleSubmit} autoComplete="off">
-        <Form.Item
-          label="Database Name"
-          name="name"
-          rules={[
-            { required: true, message: 'Please enter a database name' },
-            {
-              pattern: /^[a-zA-Z0-9_-]{1,64}$/,
-              message: 'Name must be 1-64 characters, alphanumeric with underscores/hyphens',
-            },
-          ]}
-        >
-          <Input placeholder="e.g., production_db" />
-        </Form.Item>
+    <Form form={form} layout="vertical" onFinish={handleSubmit} autoComplete="off">
+      <Form.Item
+        label="数据库名称"
+        name="name"
+        rules={[
+          { required: true, message: '请输入数据库名称' },
+          {
+            pattern: /^[a-zA-Z0-9_-]{1,64}$/,
+            message: '名称必须为1-64个字符，只能包含字母、数字、下划线和连字符',
+          },
+        ]}
+      >
+        <Input placeholder="例如：production_db" />
+      </Form.Item>
 
-        <Form.Item
-          label="Connection URL"
-          name="url"
-          rules={[
-            { required: true, message: 'Please enter a connection URL' },
-            {
-              pattern: /^postgres(ql)?:\/\/.*/,
-              message: 'URL must start with postgres:// or postgresql://',
-            },
-          ]}
-        >
-          <Input placeholder="postgres://user:password@host:port/database" type="password" />
-        </Form.Item>
+      <Form.Item
+        label="连接URL"
+        name="url"
+        rules={[
+          { required: true, message: '请输入连接URL' },
+          {
+            pattern: /^postgres(ql)?:\/\/.*/,
+            message: 'URL必须以 postgres:// 或 postgresql:// 开头',
+          },
+        ]}
+      >
+        <Input placeholder="postgres://user:password@host:port/database" />
+      </Form.Item>
 
-        <Form.Item>
-          <Button type="primary" htmlType="submit" icon={<PlusOutlined />} loading={loading} block>
-            Add Database
-          </Button>
-        </Form.Item>
-      </Form>
-    </Card>
+      <Form.Item>
+        <Button type="primary" htmlType="submit" icon={<PlusOutlined />} loading={loading} block>
+          添加数据库
+        </Button>
+      </Form.Item>
+    </Form>
   );
 }
