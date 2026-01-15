@@ -83,3 +83,5 @@ claude mcp add playwright npx @playwright/mcp@latest
 
 
 speckit.anlyze仔细 review ./w2/db_query代码，删除不用的代码，添加更多的unit test,以及寻找改进的机会。
+
+根据./w2/db_query/fixtures/test.sql生成一些复杂的自然语言查询，保存到./w2/db_query/fixtures/natural_language_test.md中

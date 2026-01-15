@@ -16,7 +16,6 @@ import { SchemaBrowser } from '../components/SchemaBrowser';
 import { SqlEditor } from '../components/SqlEditor';
 import { ResultsTable } from '../components/ResultsTable';
 import { NaturalLanguageInput } from '../components/NaturalLanguageInput';
-import { GeneratedSqlPreview } from '../components/GeneratedSqlPreview';
 import { apiFetch } from '../services/api';
 
 const { Text } = Typography;
@@ -39,7 +38,6 @@ export function DatabasePage() {
   const {
     generateSQL,
     loading: nlLoading,
-    result: generatedSQL,
     error: nlError,
   } = useNaturalQuery(name || '', {
     onSuccess: (result) => {
@@ -69,12 +67,6 @@ export function DatabasePage() {
     if (naturalPrompt.trim()) {
       generateSQL(naturalPrompt);
     }
-  };
-
-  const handleUseGeneratedSQL = (generatedSql: string) => {
-    setSql(generatedSql);
-    setQueryTab('manual');
-    message.info('SQL loaded into editor');
   };
 
   const handleRefreshMetadata = async () => {
@@ -223,7 +215,7 @@ export function DatabasePage() {
               className="font-semibold rounded-lg px-6"
               style={{ backgroundColor: '#d4a700', borderColor: '#d4a700' }}
             >
-              EXECUTE
+              {queryTab === 'manual' ? 'EXECUTE' : 'GENERATE SQL'}
             </Button>
           </div>
 
@@ -246,9 +238,12 @@ export function DatabasePage() {
             />
           </div>
 
-          {/* Editor Content */}
-          {queryTab === 'manual' ? (
-            <div className="bg-gray-900 flex-shrink-0" style={{ height: '200px' }}>
+          {/* Editor Content - Fixed height for both tabs */}
+          <div 
+            className={`flex-shrink-0 border-b border-gray-200 ${queryTab === 'manual' ? 'bg-gray-900' : 'bg-white p-4'}`}
+            style={{ height: '200px' }}
+          >
+            {queryTab === 'manual' ? (
               <SqlEditor
                 value={sql}
                 onChange={setSql}
@@ -256,17 +251,15 @@ export function DatabasePage() {
                 height="200px"
                 onExecute={handleExecute}
               />
-            </div>
-          ) : (
-            <div className="bg-white flex-shrink-0 p-4 border-b border-gray-200">
+            ) : (
               <NaturalLanguageInput
                 value={naturalPrompt}
                 onChange={setNaturalPrompt}
                 disabled={nlLoading}
                 placeholder="DESCRIBE YOUR QUERY IN NATURAL LANGUAGE (English or Chinese)"
               />
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Natural Language Error */}
           {nlError && queryTab === 'natural' && (
@@ -277,17 +270,6 @@ export function DatabasePage() {
                 type="error"
                 showIcon
                 className="rounded-lg"
-              />
-            </div>
-          )}
-
-          {/* Generated SQL Preview */}
-          {generatedSQL && queryTab === 'natural' && (
-            <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-              <GeneratedSqlPreview
-                generated={generatedSQL}
-                onUseSql={handleUseGeneratedSQL}
-                loading={nlLoading}
               />
             </div>
           )}

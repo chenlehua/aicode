@@ -23,11 +23,10 @@ export function NaturalLanguageInput({
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       disabled={disabled}
-      rows={8}
       showCount
       maxLength={1000}
-      className="rounded-lg font-mono text-sm"
-      style={{ fontFamily: 'inherit', resize: 'none' }}
+      className="rounded-lg font-mono text-sm h-full"
+      style={{ fontFamily: 'inherit', resize: 'none', height: '100%' }}
     />
   );
 }
