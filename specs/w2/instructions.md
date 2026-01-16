@@ -1,5 +1,15 @@
 # Instructions
 
+## constitution
+
+这是针对 ./w2/db_query 项目的：
+
+- 后端使用 Ergonomic Python 风格来编写代码，前端使用typescript
+- 前后端都要有严格的类型标注
+- 使用pydantic 来定义数据模型
+- 所有后端生成的 JSON 数据，使用 camelCase 格式。
+- 不需要 authentication，任何用户都可以使用。
+
 ## 基本思路
 
 这是一个数据库查询工具，用户可以添加一个 db url，系统会连接到数据库，获取数据库的 metadata，然后将数据库中的table 和 view 的信息展示出来，然后用户可以自己输入 sql 查询，也可以通过自然语言来生成 sql 查询。
@@ -11,5 +21,68 @@
 - 如果查询不包含 limit 子句，则默认添加limit 1000 子句。
 - 输出格式是json，前端将其组织成表格，并显示出来。
 
-后端使用 Python （uv）/FastAPI /sqlglot /openai sdk来实现
+
+后端使用 Python（uv）/FastAPI /sqlglot /openai sdk来实现
 前端使用React/refine 5/tailwind /ant design 来实现。sql editor使用monaco editor来实现。
+
+LL使用阿里的通义千问模型，DASHSCOPE_API_KEY 在环境变量中。数据库连接和metadata 存储在 sqlite 数据库中，放在~/.db_query/db_query.db 中。
+
+后端API需要支持cors，允许所有origin。
+大致API如下：
+
+```bash
+# 获取所有已存储的数据库
+GET /api/v1/dbs
+
+# 获取一个数据库的metadata
+PUT /api/v1/dbs/{name}
+
+{
+    "url": "postgres://user:password@host:port/database"
+}
+
+# 查询某个数据库的信息
+POST /api/v1/dbs/{name}/query
+
+{
+    "sql": "select * from users"
+}
+
+# 根据自然语言生成sql
+POST /api/v1/dbs/{name}/query/natural
+
+{
+    "prompt": "查询用户表的所有信息"
+}
+```
+
+
+
+## implementation
+
+在w2/db_query 目录下撰写Makefile来完成基本的工作，另外生成w2/db_query/fixtures/test.rest，使用vscode rest client来测试所有API。
+
+
+## testing
+仔细阅读 ./w2/db_query 下面的代码，然后运行后端和前端， 根据./w2/db_query/fixtures/test.rest 中的请求，使用curl测试后端已实现的路由；然后用playwright打开前端进行测试，任何测试问题，think ultra hard and fix
+
+claude mcp add playwright npx @playwright/mcp@latest
+
+
+## db migration 
+
+
+## fronted
+
+请调整前端页面布局，主页面显示所有连接的列表，右上角有新增数据库连接的按钮。
+
+## test
+
+请创建测试数据，保存到./w2/db_query/fixtures/test.sql,测试数据需要包含创建数据库，创建试图和表，能覆盖所有测试用例。
+
+./w2/db_query/fixtures/natural_language_test.md
+
+
+speckit.anlyze仔细 review ./w2/db_query代码，删除不用的代码，添加更多的unit test,以及寻找改进的机会。
+
+根据./w2/db_query/fixtures/test.sql生成一些复杂的自然语言查询，保存到./w2/db_query/fixtures/natural_language_test.md中

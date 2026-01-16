@@ -1,0 +1,241 @@
+### DB Query API Test Suite
+### Use VSCode REST Client extension to run these requests
+### https://marketplace.visualstudio.com/items?itemName=humao.rest-client
+
+@baseUrl = http://localhost:8000
+@apiPrefix = /api/v1
+@dbName = testdb
+
+### Variables
+@databaseName = testdb
+@queryHistoryId = 1
+@testDbUrl = postgres://postgres:postgres@localhost:5432/testdb
+@invalidDbUrl = postgres://invalid:invalid@invalid-host:5432/invalid
+
+###############################################
+# Health Check
+###############################################
+
+### Health Check
+GET {{baseUrl}}/health
+
+### Root
+GET {{baseUrl}}/
+
+###############################################
+# Database Management
+###############################################
+
+### List all databases
+GET {{baseUrl}}{{apiPrefix}}/dbs
+
+### Add or update database connection
+PUT {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}
+Content-Type: application/json
+
+{
+  "url": "{{testDbUrl}}"
+}
+
+### Get database with metadata
+GET {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}
+
+### Delete database connection
+DELETE {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}
+
+###############################################
+# Query Execution
+###############################################
+
+### Execute SQL query (simple SELECT)
+POST {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/query
+Content-Type: application/json
+
+{
+  "sql": "SELECT * FROM users LIMIT 10"
+}
+
+### Execute SQL query (without LIMIT - should auto-add LIMIT 1000)
+POST {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/query
+Content-Type: application/json
+
+{
+  "sql": "SELECT id, name, email FROM users WHERE active = true"
+}
+
+### Execute SQL query (with JOIN)
+POST {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/query
+Content-Type: application/json
+
+{
+  "sql": "SELECT u.id, u.name, o.total FROM users u JOIN orders o ON u.id = o.user_id LIMIT 50"
+}
+
+### Execute SQL query (with WHERE and ORDER BY)
+POST {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/query
+Content-Type: application/json
+
+{
+  "sql": "SELECT * FROM products WHERE price > 100 ORDER BY price DESC LIMIT 20"
+}
+
+### Execute SQL query - Invalid syntax (should return 400)
+POST {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/query
+Content-Type: application/json
+
+{
+  "sql": "SELCT * FROM users"
+}
+
+### Execute SQL query - Non-SELECT query (should return 400)
+POST {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/query
+Content-Type: application/json
+
+{
+  "sql": "INSERT INTO users (name) VALUES ('test')"
+}
+
+### Execute SQL query - Database not found (should return 404)
+POST {{baseUrl}}{{apiPrefix}}/dbs/nonexistent/query
+Content-Type: application/json
+
+{
+  "sql": "SELECT * FROM users"
+}
+
+###############################################
+# Natural Language Query Generation
+###############################################
+
+### Generate SQL from natural language (Chinese)
+POST {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/query/natural
+Content-Type: application/json
+
+{
+  "prompt": "查询用户表的所有信息"
+}
+
+### Generate SQL from natural language (English)
+POST {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/query/natural
+Content-Type: application/json
+
+{
+  "prompt": "Show me all active users"
+}
+
+### Generate SQL from natural language (with conditions)
+POST {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/query/natural
+Content-Type: application/json
+
+{
+  "prompt": "查询价格大于100的产品，按价格降序排列"
+}
+
+### Generate SQL from natural language - Database not found (should return 404)
+POST {{baseUrl}}{{apiPrefix}}/dbs/nonexistent/query/natural
+Content-Type: application/json
+
+{
+  "prompt": "查询所有用户"
+}
+
+### Generate SQL from natural language - Invalid request (empty prompt)
+POST {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/query/natural
+Content-Type: application/json
+
+{
+  "prompt": ""
+}
+
+###############################################
+# Query History
+###############################################
+
+### Get query history (all)
+GET {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/history
+
+### Get query history (paginated - page 1)
+GET {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/history?page=1&pageSize=20
+
+### Get query history (paginated - page 2)
+GET {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/history?page=2&pageSize=10
+
+### Get single history item
+GET {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/history/{{queryHistoryId}}
+
+### Delete single history item
+DELETE {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/history/{{queryHistoryId}}
+
+### Clear all query history for database
+DELETE {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/history
+
+### Get query history - Database not found (should return 404)
+GET {{baseUrl}}{{apiPrefix}}/dbs/nonexistent/history
+
+### Get query history item - Not found (should return 404)
+GET {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/history/99999
+
+###############################################
+# Error Scenarios
+###############################################
+
+### Invalid database name format (should return 400)
+PUT {{baseUrl}}{{apiPrefix}}/dbs/invalid-name-with-special-chars!
+Content-Type: application/json
+
+{
+  "url": "{{testDbUrl}}"
+}
+
+### Invalid database URL format (should return 400)
+PUT {{baseUrl}}{{apiPrefix}}/dbs/testdb2
+Content-Type: application/json
+
+{
+  "url": "invalid-url-format"
+}
+
+### Database connection failure (should return 502)
+PUT {{baseUrl}}{{apiPrefix}}/dbs/testdb3
+Content-Type: application/json
+
+{
+  "url": "{{invalidDbUrl}}"
+}
+
+###############################################
+# Complete Workflow Example
+###############################################
+
+### Step 1: Add a database connection
+PUT {{baseUrl}}{{apiPrefix}}/dbs/workflow-test
+Content-Type: application/json
+
+{
+  "url": "{{testDbUrl}}"
+}
+
+### Step 2: Get database metadata
+GET {{baseUrl}}{{apiPrefix}}/dbs/workflow-test
+
+### Step 3: Execute a query
+POST {{baseUrl}}{{apiPrefix}}/dbs/workflow-test/query
+Content-Type: application/json
+
+{
+  "sql": "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' LIMIT 10"
+}
+
+### Step 4: Generate SQL from natural language
+POST {{baseUrl}}{{apiPrefix}}/dbs/workflow-test/query/natural
+Content-Type: application/json
+
+{
+  "prompt": "显示所有表名"
+}
+
+### Step 5: Check query history
+GET {{baseUrl}}{{apiPrefix}}/dbs/workflow-test/history
+
+### Step 6: Clean up - Delete database
+DELETE {{baseUrl}}{{apiPrefix}}/dbs/workflow-test
