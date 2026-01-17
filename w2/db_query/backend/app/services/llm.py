@@ -5,10 +5,9 @@ import time
 
 from openai import OpenAI
 
+from app.adapters import DatabaseRegistry
 from app.config import settings
 from app.models.database import DatabaseMetadata, DatabaseType
-from app.services.query import QueryService
-from app.services.query_mysql import MySQLQueryService
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -137,10 +136,9 @@ class LLMService:
 
             # Validate the generated SQL based on database type
             db_type = metadata.database_type
-            if db_type == DatabaseType.MYSQL:
-                is_valid, error_msg = MySQLQueryService.validate_sql(generated_sql)
-            else:
-                is_valid, error_msg = QueryService.validate_sql(generated_sql)
+            # Use the string value for compatibility between model and core DatabaseType
+            adapter = DatabaseRegistry.get_adapter(db_type.value)
+            is_valid, error_msg = adapter.validate_sql(generated_sql)
             if not is_valid:
                 logger.warning(f"[LLM Validation] Generated SQL is invalid: {error_msg}")
                 raise ValueError(f"Generated SQL is invalid: {error_msg or 'Unknown error'}")

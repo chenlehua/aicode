@@ -1,9 +1,11 @@
 """SQLite database CRUD operations for stored connections."""
 
+import json
 from datetime import datetime
 
 from app.database import get_db
 from app.models.database import (
+    ColumnMetadata,
     DatabaseMetadata,
     DatabaseResponse,
     DatabaseType,
@@ -11,8 +13,51 @@ from app.models.database import (
     TableMetadata,
     detect_database_type,
 )
-from app.services.metadata import MetadataService
 from app.services.metadata_factory import MetadataFactory
+
+
+def serialize_table_metadata(table: TableMetadata) -> str:
+    """Serialize a single table metadata to JSON string."""
+    return json.dumps(
+        [
+            {
+                "name": c.name,
+                "data_type": c.data_type,
+                "is_nullable": c.is_nullable,
+                "default_value": c.default_value,
+                "is_primary_key": c.is_primary_key,
+                "is_foreign_key": c.is_foreign_key,
+                "references": c.references,
+            }
+            for c in table.columns
+        ]
+    )
+
+
+def deserialize_table_metadata(
+    table_name: str, table_type: str, columns_json: str, fetched_at: str
+) -> TableMetadata:
+    """Deserialize a single table metadata from JSON string."""
+    columns_data = json.loads(columns_json)
+    columns = [
+        ColumnMetadata(
+            name=c["name"],
+            data_type=c["data_type"],
+            is_nullable=c["is_nullable"],
+            default_value=c.get("default_value"),
+            is_primary_key=c.get("is_primary_key", False),
+            is_foreign_key=c.get("is_foreign_key", False),
+            references=c.get("references"),
+        )
+        for c in columns_data
+    ]
+
+    return TableMetadata(
+        table_name=table_name,
+        table_type=table_type,
+        columns=columns,
+        fetched_at=datetime.fromisoformat(fetched_at),
+    )
 
 
 class DatabaseService:
@@ -83,7 +128,7 @@ class DatabaseService:
                 metadata_full_rows = await cursor.fetchall()
 
                 for metadata_row in metadata_full_rows:
-                    table_metadata = MetadataService.deserialize_table_metadata(
+                    table_metadata = deserialize_table_metadata(
                         metadata_row["table_name"],
                         metadata_row["table_type"],
                         metadata_row["columns_json"],
@@ -174,7 +219,7 @@ class DatabaseService:
                         name,
                         table.table_name,
                         table.table_type,
-                        MetadataService.serialize_table_metadata(table),
+                        serialize_table_metadata(table),
                         table.fetched_at.isoformat(),
                     ),
                 )

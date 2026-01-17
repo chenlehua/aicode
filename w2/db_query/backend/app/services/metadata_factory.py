@@ -1,21 +1,20 @@
-"""Factory for metadata services based on database type."""
+"""Factory for metadata services based on database type.
 
-from app.models.database import DatabaseMetadata, DatabaseType, detect_database_type
-from app.services.metadata import MetadataService
-from app.services.metadata_mysql import MySQLMetadataService
+This module now delegates to the new adapter architecture for backward compatibility.
+"""
+
+from app.adapters import DatabaseRegistry
+from app.models.database import DatabaseMetadata
 
 
 class MetadataFactory:
-    """Factory class for selecting appropriate metadata service."""
+    """Factory class for selecting appropriate metadata service.
+
+    This class now delegates to the new DatabaseAdapter architecture.
+    """
 
     @staticmethod
     async def fetch_metadata(database_name: str, url: str) -> DatabaseMetadata:
         """Fetch metadata using the appropriate service for the database type."""
-        db_type = detect_database_type(url)
-
-        if db_type == DatabaseType.POSTGRESQL:
-            return await MetadataService.fetch_metadata(database_name, url)
-        elif db_type == DatabaseType.MYSQL:
-            return await MySQLMetadataService.fetch_metadata(database_name, url)
-
-        raise ValueError(f"Unsupported database type: {db_type}")
+        adapter = DatabaseRegistry.get_adapter_for_url(url)
+        return await adapter.fetch_metadata(database_name, url)

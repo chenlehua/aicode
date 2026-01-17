@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.adapters import DatabaseRegistry
 from app.config import settings
 from app.database import init_db
 from app.routers import api_router
@@ -29,7 +30,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # Startup: Initialize database
     await init_db()
     yield
-    # Shutdown: Cleanup if needed
+    # Shutdown: Close all database connections
+    await DatabaseRegistry.close_all()
 
 
 app = FastAPI(

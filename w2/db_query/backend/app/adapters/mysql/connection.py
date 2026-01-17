@@ -1,11 +1,11 @@
-"""MySQL database connection management using aiomysql."""
+"""MySQL connection pool management using aiomysql."""
 
 from typing import Any
 from urllib.parse import urlparse
 
 import aiomysql
 
-from app.services.connection_base import ConnectionServiceBase
+from app.core.types import ConnectionProvider
 
 
 def parse_mysql_url(url: str) -> dict[str, Any]:
@@ -25,17 +25,16 @@ def parse_mysql_url(url: str) -> dict[str, Any]:
     }
 
 
-class MySQLConnectionService(ConnectionServiceBase):
-    """Service for managing MySQL database connections."""
+class MySQLConnectionProvider(ConnectionProvider):
+    """MySQL connection pool manager using aiomysql."""
 
     _pools: dict[str, aiomysql.Pool] = {}
 
-    @classmethod
-    async def get_pool(cls, url: str) -> aiomysql.Pool:
+    async def get_pool(self, url: str) -> aiomysql.Pool:
         """Get or create a connection pool for a database URL."""
-        if url not in cls._pools:
+        if url not in self._pools:
             params = parse_mysql_url(url)
-            cls._pools[url] = await aiomysql.create_pool(
+            self._pools[url] = await aiomysql.create_pool(
                 host=params["host"],
                 port=params["port"],
                 user=params["user"],
@@ -46,13 +45,12 @@ class MySQLConnectionService(ConnectionServiceBase):
                 autocommit=True,
                 charset="utf8mb4",
             )
-        return cls._pools[url]
+        return self._pools[url]
 
-    @classmethod
-    async def test_connection(cls, url: str) -> bool:
+    async def test_connection(self, url: str) -> bool:
         """Test if a database connection URL is valid."""
         try:
-            pool = await cls.get_pool(url)
+            pool = await self.get_pool(url)
             async with pool.acquire() as conn:
                 async with conn.cursor() as cursor:
                     await cursor.execute("SELECT 1")
@@ -60,26 +58,23 @@ class MySQLConnectionService(ConnectionServiceBase):
         except Exception:
             return False
 
-    @classmethod
-    async def close_pool(cls, url: str) -> None:
+    async def close_pool(self, url: str) -> None:
         """Close a connection pool."""
-        if url in cls._pools:
-            cls._pools[url].close()
-            await cls._pools[url].wait_closed()
-            del cls._pools[url]
+        if url in self._pools:
+            self._pools[url].close()
+            await self._pools[url].wait_closed()
+            del self._pools[url]
 
-    @classmethod
-    async def close_all(cls) -> None:
+    async def close_all(self) -> None:
         """Close all connection pools."""
-        for pool in cls._pools.values():
+        for pool in self._pools.values():
             pool.close()
             await pool.wait_closed()
-        cls._pools.clear()
+        self._pools.clear()
 
-    @classmethod
-    async def execute(cls, url: str, query: str, *args: Any) -> list[dict[str, Any]]:
+    async def execute(self, url: str, query: str, *args: Any) -> list[dict[str, Any]]:
         """Execute a query and return results as list of dicts."""
-        pool = await cls.get_pool(url)
+        pool = await self.get_pool(url)
         async with pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cursor:
                 await cursor.execute(query, args if args else None)

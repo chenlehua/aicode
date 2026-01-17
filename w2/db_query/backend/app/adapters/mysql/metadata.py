@@ -1,18 +1,26 @@
-"""Database metadata extraction from MySQL."""
+"""MySQL metadata extraction."""
 
 from datetime import datetime
+from typing import Any
 
-from app.models.database import ColumnMetadata, DatabaseMetadata, DatabaseType, TableMetadata
-from app.services.connection_mysql import MySQLConnectionService
+from app.core.types import MetadataProvider
+from app.models.database import (
+    ColumnMetadata,
+    DatabaseMetadata,
+    DatabaseType,
+    TableMetadata,
+)
 
 
-class MySQLMetadataService:
-    """Service for extracting database metadata from MySQL."""
+class MySQLMetadataProvider(MetadataProvider):
+    """MySQL metadata extraction provider."""
 
-    @staticmethod
-    async def fetch_metadata(database_name: str, url: str) -> DatabaseMetadata:
+    def __init__(self, connection_provider: Any) -> None:
+        self._connection_provider = connection_provider
+
+    async def fetch_metadata(self, database_name: str, url: str) -> DatabaseMetadata:
         """Fetch metadata for a MySQL database."""
-        pool = await MySQLConnectionService.get_pool(url)
+        pool = await self._connection_provider.get_pool(url)
 
         async with pool.acquire() as conn:
             async with conn.cursor() as cursor:
@@ -39,9 +47,7 @@ class MySQLMetadataService:
                     table_type = row[1]
 
                     # Get columns for this table/view
-                    columns = await MySQLMetadataService._fetch_columns(
-                        cursor, db_name, table_name
-                    )
+                    columns = await self._fetch_columns(cursor, db_name, table_name)
 
                     table_metadata = TableMetadata(
                         table_name=table_name,
@@ -65,9 +71,8 @@ class MySQLMetadataService:
                     fetched_at=datetime.now(),
                 )
 
-    @staticmethod
     async def _fetch_columns(
-        cursor: any, db_name: str, table_name: str
+        self, cursor: Any, db_name: str, table_name: str
     ) -> list[ColumnMetadata]:
         """Fetch column metadata for a table/view in MySQL."""
         # Get basic column info from information_schema
@@ -110,10 +115,7 @@ class MySQLMetadataService:
         """
         await cursor.execute(fk_query, (db_name, table_name))
         fk_rows = await cursor.fetchall()
-        fk_map = {
-            row[0]: f"{row[1]}.{row[2]}"
-            for row in fk_rows
-        }
+        fk_map = {row[0]: f"{row[1]}.{row[2]}" for row in fk_rows}
 
         columns: list[ColumnMetadata] = []
         for row in column_rows:

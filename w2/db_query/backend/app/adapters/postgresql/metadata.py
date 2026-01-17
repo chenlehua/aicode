@@ -1,21 +1,28 @@
-"""Database metadata extraction from PostgreSQL."""
+"""PostgreSQL metadata extraction."""
 
-import json
 from datetime import datetime
+from typing import Any
 
 import asyncpg
 
-from app.models.database import ColumnMetadata, DatabaseMetadata, DatabaseType, TableMetadata
-from app.services.connection import ConnectionService
+from app.core.types import MetadataProvider
+from app.models.database import (
+    ColumnMetadata,
+    DatabaseMetadata,
+    DatabaseType,
+    TableMetadata,
+)
 
 
-class MetadataService:
-    """Service for extracting database metadata from PostgreSQL."""
+class PostgreSQLMetadataProvider(MetadataProvider):
+    """PostgreSQL metadata extraction provider."""
 
-    @staticmethod
-    async def fetch_metadata(database_name: str, url: str) -> DatabaseMetadata:
+    def __init__(self, connection_provider: Any) -> None:
+        self._connection_provider = connection_provider
+
+    async def fetch_metadata(self, database_name: str, url: str) -> DatabaseMetadata:
         """Fetch metadata for a PostgreSQL database."""
-        pool = await ConnectionService.get_pool(url)
+        pool = await self._connection_provider.get_pool(url)
 
         async with pool.acquire() as conn:
             # Get all tables and views
@@ -35,7 +42,7 @@ class MetadataService:
                 table_type = row["table_type"]
 
                 # Get columns for this table/view
-                columns = await MetadataService._fetch_columns(conn, table_name)
+                columns = await self._fetch_columns(conn, table_name)
 
                 table_metadata = TableMetadata(
                     table_name=table_name,
@@ -59,8 +66,9 @@ class MetadataService:
                 fetched_at=datetime.now(),
             )
 
-    @staticmethod
-    async def _fetch_columns(conn: asyncpg.Connection, table_name: str) -> list[ColumnMetadata]:
+    async def _fetch_columns(
+        self, conn: asyncpg.Connection, table_name: str
+    ) -> list[ColumnMetadata]:
         """Fetch column metadata for a table/view."""
         # Get basic column info
         columns_query = """
@@ -82,8 +90,11 @@ class MetadataService:
             JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
             WHERE i.indrelid = $1::regclass AND i.indisprimary
         """
-        pk_rows = await conn.fetch(pk_query, table_name)
-        pk_columns = {row["attname"] for row in pk_rows}
+        try:
+            pk_rows = await conn.fetch(pk_query, table_name)
+            pk_columns = {row["attname"] for row in pk_rows}
+        except Exception:
+            pk_columns = set()
 
         # Get foreign key columns
         fk_query = """
@@ -125,47 +136,3 @@ class MetadataService:
             )
 
         return columns
-
-    @staticmethod
-    def serialize_table_metadata(table: TableMetadata) -> str:
-        """Serialize a single table metadata to JSON string."""
-        return json.dumps(
-            [
-                {
-                    "name": c.name,
-                    "data_type": c.data_type,
-                    "is_nullable": c.is_nullable,
-                    "default_value": c.default_value,
-                    "is_primary_key": c.is_primary_key,
-                    "is_foreign_key": c.is_foreign_key,
-                    "references": c.references,
-                }
-                for c in table.columns
-            ]
-        )
-
-    @staticmethod
-    def deserialize_table_metadata(
-        table_name: str, table_type: str, columns_json: str, fetched_at: str
-    ) -> TableMetadata:
-        """Deserialize a single table metadata from JSON string."""
-        columns_data = json.loads(columns_json)
-        columns = [
-            ColumnMetadata(
-                name=c["name"],
-                data_type=c["data_type"],
-                is_nullable=c["is_nullable"],
-                default_value=c.get("default_value"),
-                is_primary_key=c.get("is_primary_key", False),
-                is_foreign_key=c.get("is_foreign_key", False),
-                references=c.get("references"),
-            )
-            for c in columns_data
-        ]
-
-        return TableMetadata(
-            table_name=table_name,
-            table_type=table_type,
-            columns=columns,
-            fetched_at=datetime.fromisoformat(fetched_at),
-        )
