@@ -13,3 +13,5 @@
 ## 更换网站设计风格
 
 @.cursor/rules/motherduck-style.md 基于新的设计风格，把./sites 的整体风格重构一下
+
+更新： @.cursor/rules/motherduck-style.md以及网站 global css: motherduck不使用圆角，全部是直角，并且特定的border是黑粗线条；页面背景颜色需要改成和它一致的颜色。另外，很多地方的padding/margin似乎都乱了。请仔细阅读代码并修复所有的问题。

@@ -3,7 +3,6 @@
 import { Editor } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
 import * as monaco from 'monaco-editor';
-import { Alert } from 'antd';
 import { useRef, useEffect } from 'react';
 
 interface SqlEditorProps {
@@ -18,7 +17,6 @@ interface SqlEditorProps {
 export function SqlEditor({
   value,
   onChange,
-  error,
   readOnly = false,
   height = '300px',
   onExecute,
@@ -64,7 +62,7 @@ export function SqlEditor({
   }, [onExecute, readOnly]);
 
   return (
-    <div>
+    <div className="h-full relative">
       <Editor
         height={height}
         defaultLanguage="sql"
@@ -76,6 +74,7 @@ export function SqlEditor({
           minimap: { enabled: false },
           scrollBeyondLastLine: false,
           fontSize: 14,
+          fontFamily: "'JetBrains Mono', 'SF Mono', 'Fira Code', monospace",
           lineNumbers: 'on',
           roundedSelection: false,
           cursorStyle: 'line',
@@ -83,18 +82,20 @@ export function SqlEditor({
           formatOnPaste: true,
           formatOnType: true,
           wordWrap: 'on',
+          padding: { top: 16, bottom: 16 },
+          lineHeight: 22,
+          renderLineHighlight: 'all',
+          scrollbar: {
+            verticalScrollbarSize: 6,
+            horizontalScrollbarSize: 6,
+          },
         }}
         theme="vs-dark"
       />
-      {error && (
-        <Alert
-          message="SQL Error"
-          description={error}
-          type="error"
-          showIcon
-          style={{ marginTop: 8 }}
-        />
-      )}
+      {/* Keyboard Shortcut Hint */}
+      <div className="absolute bottom-3 right-4 text-xs text-gray-500 bg-gray-800/80 px-2 py-1 rounded pointer-events-none">
+        ⌘/Ctrl + Enter 执行
+      </div>
     </div>
   );
 }

@@ -2,7 +2,6 @@ import { Refine } from '@refinedev/core';
 import { RefineKbar, RefineKbarProvider } from '@refinedev/kbar';
 import {
   ErrorComponent,
-  ThemedLayoutV2,
   useNotificationProvider,
 } from '@refinedev/antd';
 import dataProvider from '@refinedev/simple-rest';
@@ -21,11 +20,45 @@ import { CustomSider } from './components/CustomSider';
 
 const { Sider, Content } = Layout;
 
+// MotherDuck Theme Configuration
+const themeConfig = {
+  token: {
+    colorPrimary: '#FFCC00',
+    colorSuccess: '#10B981',
+    colorWarning: '#F59E0B',
+    colorError: '#EF4444',
+    colorInfo: '#3B82F6',
+    colorTextBase: '#111827',
+    colorBgBase: '#FFFFFF',
+    borderRadius: 8,
+    fontFamily: "'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif",
+    fontSize: 14,
+    lineHeight: 1.6,
+  },
+  components: {
+    Button: {
+      borderRadius: 12,
+      controlHeight: 40,
+      fontWeight: 600,
+    },
+    Input: {
+      borderRadius: 8,
+      controlHeight: 40,
+    },
+    Card: {
+      borderRadius: 16,
+    },
+    Modal: {
+      borderRadius: 24,
+    },
+  },
+};
+
 function App() {
   return (
     <BrowserRouter>
       <RefineKbarProvider>
-        <ConfigProvider>
+        <ConfigProvider theme={themeConfig}>
           <Refine
             dataProvider={dataProvider(API_BASE)}
             routerProvider={routerProvider}
@@ -45,11 +78,15 @@ function App() {
             <Routes>
               <Route
                 element={
-                  <Layout className="h-screen">
-                    <Sider width={300} className="border-r border-gray-200">
+                  <Layout className="h-screen bg-bg-secondary">
+                    <Sider
+                      width={320}
+                      className="border-r border-border-light shadow-sm"
+                      style={{ background: '#FFFFFF' }}
+                    >
                       <CustomSider />
                     </Sider>
-                    <Content className="overflow-auto">
+                    <Content className="overflow-auto bg-bg-secondary">
                       <Outlet />
                     </Content>
                   </Layout>
