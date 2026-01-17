@@ -1,8 +1,10 @@
 /** Component for displaying query results in a table. */
 
-import { Table, Tag, Alert, Spin, Skeleton, Button, message } from 'antd';
+import { useState, useEffect } from 'react';
+import { Table, Tag, Spin, Skeleton, Button, message } from 'antd';
 import { DownloadOutlined, FileTextOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import type { QueryResult } from '../types';
+import type { TablePaginationConfig } from 'antd';
 
 interface ResultsTableProps {
   result: QueryResult | null;
@@ -53,6 +55,23 @@ const downloadFile = (content: string, filename: string, mimeType: string) => {
 };
 
 export function ResultsTable({ result, loading }: ResultsTableProps) {
+  const [pagination, setPagination] = useState<TablePaginationConfig>({
+    current: 1,
+    pageSize: 10,
+    showSizeChanger: true,
+    showTotal: (total) => `共 ${total} 行`,
+    pageSizeOptions: ['10', '25', '50', '100'],
+  });
+
+  // Reset to first page when result changes
+  useEffect(() => {
+    setPagination((prev) => ({ ...prev, current: 1 }));
+  }, [result]);
+
+  const handleTableChange = (newPagination: TablePaginationConfig) => {
+    setPagination(newPagination);
+  };
+
   if (loading) {
     return (
       <div className="p-6">
@@ -193,12 +212,10 @@ export function ResultsTable({ result, loading }: ResultsTableProps) {
           columns={columns}
           dataSource={dataSource}
           pagination={{
-            pageSize: 50,
-            showSizeChanger: true,
-            showTotal: (total) => `共 ${total} 行`,
-            pageSizeOptions: ['10', '25', '50', '100'],
+            ...pagination,
             className: 'px-6 py-3',
           }}
+          onChange={handleTableChange}
           scroll={{ x: 'max-content' }}
           size="small"
           className="results-table"

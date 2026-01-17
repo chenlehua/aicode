@@ -83,7 +83,7 @@ export function AddDatabaseForm({ onSuccess }: AddDatabaseFormProps) {
             </span>
           }
         >
-          <Input.Password
+          <Input
             placeholder="postgres://user:password@host:port/database"
             className="h-11 rounded-xl"
           />

@@ -1,8 +1,8 @@
 /** Schema browser component with search functionality. */
 
-import { useMemo } from 'react';
-import { Collapse, Tag, Empty } from 'antd';
-import { TableOutlined, EyeOutlined, KeyOutlined, LinkOutlined } from '@ant-design/icons';
+import { useMemo, useState } from 'react';
+import { Collapse, Tag, Empty, Tooltip } from 'antd';
+import { TableOutlined, EyeOutlined, KeyOutlined, LinkOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import type { DatabaseMetadata, ColumnMetadata } from '../types';
 
 interface SchemaBrowserProps {
@@ -12,6 +12,9 @@ interface SchemaBrowserProps {
 }
 
 export function SchemaBrowser({ metadata, onTableClick, searchText = '' }: SchemaBrowserProps) {
+  // Track expanded keys - default to empty (collapsed) for better performance
+  const [expandedTableKeys, setExpandedTableKeys] = useState<string[]>([]);
+  const [expandedViewKeys, setExpandedViewKeys] = useState<string[]>([]);
 
   const filteredTables = useMemo(() => {
     if (!searchText.trim()) {
@@ -37,38 +40,74 @@ export function SchemaBrowser({ metadata, onTableClick, searchText = '' }: Schem
     );
   }, [metadata.views, searchText]);
 
-  const renderColumn = (col: ColumnMetadata) => (
-    <div
-      key={col.name}
-      className="py-2.5 px-3 border-b border-border-light last:border-0 hover:bg-bg-secondary transition-colors duration-150"
-    >
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          <span className="font-mono text-sm text-text-primary truncate">{col.name}</span>
-          <Tag className="flex-shrink-0 bg-bg-tertiary text-text-secondary border-0 text-xs">
+  // When searching, auto-expand matching tables/views
+  useMemo(() => {
+    if (searchText.trim()) {
+      setExpandedTableKeys(filteredTables.map((t) => `table-${t.tableName}`));
+      setExpandedViewKeys(filteredViews.map((v) => `view-${v.tableName}`));
+    }
+  }, [searchText, filteredTables, filteredViews]);
+
+  const renderColumn = (col: ColumnMetadata, tableName: string) => {
+    // Build tooltip content for additional info
+    const tooltipContent = [];
+    if (col.defaultValue) {
+      tooltipContent.push(`默认值: ${col.defaultValue}`);
+    }
+    if (col.references) {
+      tooltipContent.push(`引用: ${col.references}`);
+    }
+
+    return (
+      <div
+        key={`${tableName}-${col.name}`}
+        className="py-2.5 px-3 border-b border-border-light last:border-0 hover:bg-bg-secondary transition-colors duration-150"
+      >
+        {/* Row 1: Column Name */}
+        <div className="flex items-start gap-2 mb-1.5">
+          <span className="font-mono text-sm text-text-primary break-all leading-tight flex-1">
+            {col.name}
+          </span>
+          {tooltipContent.length > 0 && (
+            <Tooltip title={tooltipContent.join('\n')} placement="left">
+              <InfoCircleOutlined className="text-text-tertiary text-xs flex-shrink-0 mt-0.5 cursor-help" />
+            </Tooltip>
+          )}
+        </div>
+
+        {/* Row 2: Type and Tags */}
+        <div className="flex items-center flex-wrap gap-1">
+          <Tag className="m-0 bg-bg-tertiary text-text-secondary border-0 text-xs font-mono">
             {col.dataType.toUpperCase()}
           </Tag>
-        </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
           {col.isPrimaryKey && (
-            <Tag color="gold" className="m-0 text-xs flex items-center gap-1">
-              <KeyOutlined className="text-[10px]" />
-              PK
+            <Tag color="gold" className="m-0 text-xs">
+              <KeyOutlined className="mr-0.5" />
+              主键
             </Tag>
           )}
           {col.isForeignKey && (
-            <Tag color="green" className="m-0 text-xs flex items-center gap-1">
-              <LinkOutlined className="text-[10px]" />
-              FK
-            </Tag>
+            <Tooltip title={col.references ? `引用 ${col.references}` : '外键'}>
+              <Tag color="cyan" className="m-0 text-xs cursor-help">
+                <LinkOutlined className="mr-0.5" />
+                外键
+              </Tag>
+            </Tooltip>
           )}
           {!col.isNullable && (
-            <Tag color="red" className="m-0 text-xs">NOT NULL</Tag>
+            <Tag color="orange" className="m-0 text-xs">非空</Tag>
+          )}
+          {col.defaultValue && (
+            <Tooltip title={`默认值: ${col.defaultValue}`}>
+              <Tag className="m-0 text-xs bg-accent-green/10 text-accent-green border-0 cursor-help">
+                默认
+              </Tag>
+            </Tooltip>
           )}
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const tableItems = filteredTables.map((table) => ({
     key: `table-${table.tableName}`,
@@ -80,18 +119,20 @@ export function SchemaBrowser({ metadata, onTableClick, searchText = '' }: Schem
           onTableClick?.(table.tableName);
         }}
       >
-        <TableOutlined className="text-accent-blue text-sm" />
-        <span className="font-mono text-sm font-medium text-text-primary group-hover:text-accent-blue transition-colors">
-          {table.tableName}
-        </span>
-        <span className="text-xs text-text-tertiary ml-auto">
+        <TableOutlined className="text-accent-blue text-sm flex-shrink-0" />
+        <Tooltip title={table.tableName} placement="top">
+          <span className="font-mono text-sm font-medium text-text-primary group-hover:text-accent-blue transition-colors truncate max-w-[140px]">
+            {table.tableName}
+          </span>
+        </Tooltip>
+        <span className="text-xs text-text-tertiary flex-shrink-0 ml-auto tabular-nums">
           {table.columns.length} 列
         </span>
       </div>
     ),
     children: (
-      <div className="bg-white border border-border-light rounded-lg overflow-hidden mt-1 shadow-xs">
-        {table.columns.map(renderColumn)}
+      <div className="bg-white border border-border-light rounded-lg overflow-hidden mt-1 shadow-xs max-h-80 overflow-y-auto">
+        {table.columns.map((col) => renderColumn(col, table.tableName))}
       </div>
     ),
   }));
@@ -100,25 +141,42 @@ export function SchemaBrowser({ metadata, onTableClick, searchText = '' }: Schem
     key: `view-${view.tableName}`,
     label: (
       <div className="flex items-center gap-2 py-0.5">
-        <EyeOutlined className="text-accent-green text-sm" />
-        <span className="font-mono text-sm font-medium text-text-primary">
-          {view.tableName}
-        </span>
-        <span className="text-xs text-text-tertiary ml-auto">
+        <EyeOutlined className="text-accent-green text-sm flex-shrink-0" />
+        <Tooltip title={view.tableName} placement="top">
+          <span className="font-mono text-sm font-medium text-text-primary truncate max-w-[140px]">
+            {view.tableName}
+          </span>
+        </Tooltip>
+        <span className="text-xs text-text-tertiary flex-shrink-0 ml-auto tabular-nums">
           {view.columns.length} 列
         </span>
       </div>
     ),
     children: (
-      <div className="bg-white border border-border-light rounded-lg overflow-hidden mt-1 shadow-xs">
-        {view.columns.map(renderColumn)}
+      <div className="bg-white border border-border-light rounded-lg overflow-hidden mt-1 shadow-xs max-h-80 overflow-y-auto">
+        {view.columns.map((col) => renderColumn(col, view.tableName))}
       </div>
     ),
   }));
 
-  // Get all keys for default expanded state
-  const allTableKeys = filteredTables.map((t) => `table-${t.tableName}`);
-  const allViewKeys = filteredViews.map((v) => `view-${v.tableName}`);
+  // Toggle all tables/views
+  const toggleAllTables = () => {
+    const allKeys = filteredTables.map((t) => `table-${t.tableName}`);
+    if (expandedTableKeys.length === allKeys.length) {
+      setExpandedTableKeys([]);
+    } else {
+      setExpandedTableKeys(allKeys);
+    }
+  };
+
+  const toggleAllViews = () => {
+    const allKeys = filteredViews.map((v) => `view-${v.tableName}`);
+    if (expandedViewKeys.length === allKeys.length) {
+      setExpandedViewKeys([]);
+    } else {
+      setExpandedViewKeys(allKeys);
+    }
+  };
 
   return (
     <div className="h-full flex flex-col">
@@ -144,13 +202,22 @@ export function SchemaBrowser({ metadata, onTableClick, searchText = '' }: Schem
                       表
                     </span>
                   </div>
-                  <span className="text-xs font-medium text-accent-primary bg-accent-primary/10 px-2 py-0.5 rounded-full">
-                    {filteredTables.length}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={toggleAllTables}
+                      className="text-xs text-text-tertiary hover:text-accent-blue transition-colors"
+                    >
+                      {expandedTableKeys.length === filteredTables.length ? '全部折叠' : '全部展开'}
+                    </button>
+                    <span className="text-xs font-medium text-accent-primary bg-accent-primary/10 px-2 py-0.5 rounded-full">
+                      {filteredTables.length}
+                    </span>
+                  </div>
                 </div>
                 <Collapse
                   items={tableItems}
-                  defaultActiveKey={allTableKeys}
+                  activeKey={expandedTableKeys}
+                  onChange={(keys) => setExpandedTableKeys(keys as string[])}
                   size="small"
                   ghost
                   className="schema-collapse"
@@ -166,13 +233,22 @@ export function SchemaBrowser({ metadata, onTableClick, searchText = '' }: Schem
                       视图
                     </span>
                   </div>
-                  <span className="text-xs font-medium text-accent-green bg-accent-green/10 px-2 py-0.5 rounded-full">
-                    {filteredViews.length}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={toggleAllViews}
+                      className="text-xs text-text-tertiary hover:text-accent-green transition-colors"
+                    >
+                      {expandedViewKeys.length === filteredViews.length ? '全部折叠' : '全部展开'}
+                    </button>
+                    <span className="text-xs font-medium text-accent-green bg-accent-green/10 px-2 py-0.5 rounded-full">
+                      {filteredViews.length}
+                    </span>
+                  </div>
                 </div>
                 <Collapse
                   items={viewItems}
-                  defaultActiveKey={allViewKeys}
+                  activeKey={expandedViewKeys}
+                  onChange={(keys) => setExpandedViewKeys(keys as string[])}
                   size="small"
                   ghost
                   className="schema-collapse"
