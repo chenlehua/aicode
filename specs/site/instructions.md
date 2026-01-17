@@ -15,3 +15,13 @@
 @.cursor/rules/motherduck-style.md 基于新的设计风格，把./sites 的整体风格重构一下
 
 更新： @.cursor/rules/motherduck-style.md以及网站 global css: motherduck不使用圆角，全部是直角，并且特定的border是黑粗线条；页面背景颜色需要改成和它一致的颜色。另外，很多地方的padding/margin似乎都乱了。请仔细阅读代码并修复所有的问题。
+
+很多页面元素的间距有问题，请一个个排查，使用playwright mcp检查确保每个页面都显示正确。
+
+所有页面都需要处理。文字的间距也要妥善处理，nav/footer也都不对。
+
+修复所有组件和页面的css style问题，现在组件间间距，文字间间距都有些问题。
+
+按钮之间的间距也要好一些。另外，line要黑粗，像motherduck 风格。
+
+section之间用不同的颜色和粗线条过渡。
