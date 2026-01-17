@@ -6,10 +6,13 @@ from app.database import get_db
 from app.models.database import (
     DatabaseMetadata,
     DatabaseResponse,
+    DatabaseType,
     DatabaseWithMetadata,
     TableMetadata,
+    detect_database_type,
 )
 from app.services.metadata import MetadataService
+from app.services.metadata_factory import MetadataFactory
 
 
 class DatabaseService:
@@ -29,6 +32,7 @@ class DatabaseService:
                     name=row["name"],
                     url=row["url"],
                     description=row["description"] or "",
+                    database_type=detect_database_type(row["url"]),
                     created_at=datetime.fromisoformat(row["created_at"]),
                     updated_at=datetime.fromisoformat(row["updated_at"]),
                 )
@@ -50,6 +54,9 @@ class DatabaseService:
             db_row = await cursor.fetchone()
             if not db_row:
                 return None
+
+            url = db_row["url"]
+            db_type = detect_database_type(url)
 
             # Get metadata
             cursor = await db.execute(
@@ -93,6 +100,7 @@ class DatabaseService:
 
                 metadata = DatabaseMetadata(
                     database_name=name,
+                    database_type=db_type,
                     tables=tables,
                     views=views,
                     table_count=len(tables),
@@ -103,6 +111,7 @@ class DatabaseService:
                 # No cached metadata
                 metadata = DatabaseMetadata(
                     database_name=name,
+                    database_type=db_type,
                     tables=[],
                     views=[],
                     table_count=0,
@@ -112,8 +121,9 @@ class DatabaseService:
 
             return DatabaseWithMetadata(
                 name=db_row["name"],
-                url=db_row["url"],
+                url=url,
                 description=db_row["description"] or "",
+                database_type=db_type,
                 created_at=datetime.fromisoformat(db_row["created_at"]),
                 updated_at=datetime.fromisoformat(db_row["updated_at"]),
                 metadata=metadata,
@@ -130,6 +140,7 @@ class DatabaseService:
         try:
             now = datetime.now()
             now_iso = now.isoformat()
+            db_type = detect_database_type(url)
 
             # Upsert database connection
             await db.execute(
@@ -144,8 +155,8 @@ class DatabaseService:
                 (name, url, description, now_iso, now_iso),
             )
 
-            # Fetch and cache metadata
-            metadata = await MetadataService.fetch_metadata(name, url)
+            # Fetch and cache metadata using factory
+            metadata = await MetadataFactory.fetch_metadata(name, url)
 
             # Delete old metadata
             await db.execute("DELETE FROM metadata WHERE database_name = ?", (name,))
@@ -174,6 +185,7 @@ class DatabaseService:
                 name=name,
                 url=url,
                 description=description,
+                database_type=db_type,
                 created_at=now,
                 updated_at=now,
                 metadata=metadata,

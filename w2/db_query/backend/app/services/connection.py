@@ -1,10 +1,14 @@
 """PostgreSQL database connection management."""
 
+from typing import Any
+
 import asyncpg
 from asyncpg import Pool
 
+from app.services.connection_base import ConnectionServiceBase
 
-class ConnectionService:
+
+class PostgreSQLConnectionService(ConnectionServiceBase):
     """Service for managing PostgreSQL database connections."""
 
     _pools: dict[str, Pool] = {}
@@ -40,3 +44,15 @@ class ConnectionService:
         for pool in cls._pools.values():
             await pool.close()
         cls._pools.clear()
+
+    @classmethod
+    async def execute(cls, url: str, query: str, *args: Any) -> list[dict[str, Any]]:
+        """Execute a query and return results as list of dicts."""
+        pool = await cls.get_pool(url)
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(query, *args)
+            return [dict(row) for row in rows]
+
+
+# Keep backward compatibility with existing code
+ConnectionService = PostgreSQLConnectionService

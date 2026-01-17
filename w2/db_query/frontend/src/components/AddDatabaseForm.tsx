@@ -102,20 +102,20 @@ export function AddDatabaseForm({ database, viewOnly = false, onSuccess, onCance
           rules={[
             { required: true, message: '请输入连接URL' },
             {
-              pattern: /^postgres(ql)?:\/\/.*/,
-              message: 'URL必须以 postgres:// 或 postgresql:// 开头',
+              pattern: /^(postgres(ql)?|mysql):\/\/.*/,
+              message: 'URL必须以 postgres://, postgresql:// 或 mysql:// 开头',
             },
           ]}
           extra={
             !viewOnly && (
               <span className="text-xs text-text-tertiary mt-1 block">
-                格式：postgres://用户名:密码@主机:端口/数据库名
+                格式：postgres://用户名:密码@主机:端口/数据库名 或 mysql://用户名:密码@主机:端口/数据库名
               </span>
             )
           }
         >
           <Input
-            placeholder="postgres://user:password@host:port/database"
+            placeholder="postgres://user:password@host:port/database 或 mysql://..."
             className="h-11 rounded-xl"
           />
         </Form.Item>
@@ -181,6 +181,9 @@ export function AddDatabaseForm({ database, viewOnly = false, onSuccess, onCance
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-1 bg-accent-blue/10 text-accent-blue text-xs font-medium rounded-full">
               PostgreSQL
+            </span>
+            <span className="px-2.5 py-1 bg-accent-orange/10 text-accent-orange text-xs font-medium rounded-full">
+              MySQL
             </span>
           </div>
         </div>

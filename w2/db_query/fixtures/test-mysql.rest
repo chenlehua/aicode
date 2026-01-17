@@ -1,0 +1,280 @@
+### DB Query API Test Suite - MySQL
+### Use VSCode REST Client extension to run these requests
+### https://marketplace.visualstudio.com/items?itemName=humao.rest-client
+
+@baseUrl = http://localhost:8000
+@apiPrefix = /api/v1
+@dbName = mysql-testdb
+
+### Variables
+@databaseName = mysql-testdb
+@queryHistoryId = 1
+@testDbUrl = mysql://mysql:mysql@localhost:3306/testdb
+@invalidDbUrl = mysql://invalid:invalid@invalid-host:3306/invalid
+
+###############################################
+# Health Check
+###############################################
+
+### Health Check
+GET {{baseUrl}}/health
+
+### Root
+GET {{baseUrl}}/
+
+###############################################
+# Database Management - MySQL
+###############################################
+
+### List all databases
+GET {{baseUrl}}{{apiPrefix}}/dbs
+
+### Add or update MySQL database connection
+PUT {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}
+Content-Type: application/json
+
+{
+  "url": "{{testDbUrl}}",
+  "description": "MySQL test database"
+}
+
+### Get MySQL database with metadata
+GET {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}
+
+### Delete MySQL database connection
+DELETE {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}
+
+###############################################
+# Query Execution - MySQL
+###############################################
+
+### Execute SQL query (simple SELECT)
+POST {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/query
+Content-Type: application/json
+
+{
+  "sql": "SELECT * FROM users LIMIT 10"
+}
+
+### Execute SQL query (without LIMIT - should auto-add LIMIT 1000)
+POST {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/query
+Content-Type: application/json
+
+{
+  "sql": "SELECT id, name, email FROM users WHERE active = true"
+}
+
+### Execute SQL query (with JOIN)
+POST {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/query
+Content-Type: application/json
+
+{
+  "sql": "SELECT u.id, u.name, o.total FROM users u JOIN orders o ON u.id = o.user_id LIMIT 50"
+}
+
+### Execute SQL query (with WHERE and ORDER BY)
+POST {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/query
+Content-Type: application/json
+
+{
+  "sql": "SELECT * FROM products WHERE price > 100 ORDER BY price DESC LIMIT 20"
+}
+
+### Execute SQL query (aggregate functions)
+POST {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/query
+Content-Type: application/json
+
+{
+  "sql": "SELECT COUNT(*) as total_users, SUM(CASE WHEN active = true THEN 1 ELSE 0 END) as active_users FROM users"
+}
+
+### Execute SQL query (subquery)
+POST {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/query
+Content-Type: application/json
+
+{
+  "sql": "SELECT * FROM products WHERE category_id IN (SELECT id FROM categories WHERE active = true) LIMIT 20"
+}
+
+### Execute SQL query - Invalid syntax (should return 400)
+POST {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/query
+Content-Type: application/json
+
+{
+  "sql": "SELCT * FROM users"
+}
+
+### Execute SQL query - Non-SELECT query (should return 400)
+POST {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/query
+Content-Type: application/json
+
+{
+  "sql": "INSERT INTO users (name) VALUES ('test')"
+}
+
+### Execute SQL query - Database not found (should return 404)
+POST {{baseUrl}}{{apiPrefix}}/dbs/nonexistent/query
+Content-Type: application/json
+
+{
+  "sql": "SELECT * FROM users"
+}
+
+###############################################
+# Natural Language Query Generation - MySQL
+###############################################
+
+### Generate SQL from natural language (Chinese)
+POST {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/query/natural
+Content-Type: application/json
+
+{
+  "prompt": "查询用户表的所有信息"
+}
+
+### Generate SQL from natural language (English)
+POST {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/query/natural
+Content-Type: application/json
+
+{
+  "prompt": "Show me all active users"
+}
+
+### Generate SQL from natural language (with conditions)
+POST {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/query/natural
+Content-Type: application/json
+
+{
+  "prompt": "查询价格大于100的产品，按价格降序排列"
+}
+
+### Generate SQL from natural language (with JOIN)
+POST {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/query/natural
+Content-Type: application/json
+
+{
+  "prompt": "显示每个用户的订单总金额"
+}
+
+### Generate SQL from natural language - Database not found (should return 404)
+POST {{baseUrl}}{{apiPrefix}}/dbs/nonexistent/query/natural
+Content-Type: application/json
+
+{
+  "prompt": "查询所有用户"
+}
+
+###############################################
+# Query History - MySQL
+###############################################
+
+### Get query history (all)
+GET {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/history
+
+### Get query history (paginated - page 1)
+GET {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/history?page=1&pageSize=20
+
+### Get query history (paginated - page 2)
+GET {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/history?page=2&pageSize=10
+
+###############################################
+# Error Scenarios - MySQL
+###############################################
+
+### Invalid database URL format (should return 400)
+PUT {{baseUrl}}{{apiPrefix}}/dbs/testdb-invalid
+Content-Type: application/json
+
+{
+  "url": "invalid-url-format"
+}
+
+### MySQL database connection failure (should return 502)
+PUT {{baseUrl}}{{apiPrefix}}/dbs/testdb-fail
+Content-Type: application/json
+
+{
+  "url": "{{invalidDbUrl}}"
+}
+
+###############################################
+# Complete Workflow Example - MySQL
+###############################################
+
+### Step 1: Add a MySQL database connection
+PUT {{baseUrl}}{{apiPrefix}}/dbs/mysql-workflow-test
+Content-Type: application/json
+
+{
+  "url": "{{testDbUrl}}",
+  "description": "MySQL workflow test"
+}
+
+### Step 2: Get MySQL database metadata
+GET {{baseUrl}}{{apiPrefix}}/dbs/mysql-workflow-test
+
+### Step 3: Execute a query on MySQL
+POST {{baseUrl}}{{apiPrefix}}/dbs/mysql-workflow-test/query
+Content-Type: application/json
+
+{
+  "sql": "SELECT table_name FROM information_schema.tables WHERE table_schema = 'testdb' LIMIT 10"
+}
+
+### Step 4: Generate SQL from natural language (MySQL)
+POST {{baseUrl}}{{apiPrefix}}/dbs/mysql-workflow-test/query/natural
+Content-Type: application/json
+
+{
+  "prompt": "显示所有表名"
+}
+
+### Step 5: Check query history
+GET {{baseUrl}}{{apiPrefix}}/dbs/mysql-workflow-test/history
+
+### Step 6: Clean up - Delete MySQL database
+DELETE {{baseUrl}}{{apiPrefix}}/dbs/mysql-workflow-test
+
+###############################################
+# MySQL-Specific Queries
+###############################################
+
+### Query with MySQL-specific syntax (IFNULL)
+POST {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/query
+Content-Type: application/json
+
+{
+  "sql": "SELECT id, name, IFNULL(phone, 'N/A') as phone FROM users LIMIT 10"
+}
+
+### Query with MySQL date functions
+POST {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/query
+Content-Type: application/json
+
+{
+  "sql": "SELECT id, name, DATE_FORMAT(created_at, '%Y-%m-%d') as created_date FROM users LIMIT 10"
+}
+
+### Query views
+POST {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/query
+Content-Type: application/json
+
+{
+  "sql": "SELECT * FROM v_active_users LIMIT 10"
+}
+
+### Query user order summary view
+POST {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/query
+Content-Type: application/json
+
+{
+  "sql": "SELECT * FROM v_user_order_summary ORDER BY total_spent DESC LIMIT 10"
+}
+
+### Query product stats view
+POST {{baseUrl}}{{apiPrefix}}/dbs/{{databaseName}}/query
+Content-Type: application/json
+
+{
+  "sql": "SELECT * FROM v_product_stats ORDER BY total_revenue DESC LIMIT 10"
+}

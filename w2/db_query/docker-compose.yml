@@ -18,6 +18,27 @@ services:
     networks:
       - db_query_network
 
+  mysql:
+    image: mysql:8.0
+    container_name: db_query_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: mysql
+      MYSQL_USER: mysql
+      MYSQL_PASSWORD: mysql
+      MYSQL_DATABASE: testdb
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./fixtures/test_mysql.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pmysql"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - db_query_network
+
   backend:
     build:
       context: ./backend
@@ -34,6 +55,8 @@ services:
       - backend_data:/app/data
     depends_on:
       postgres:
+        condition: service_healthy
+      mysql:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
@@ -58,6 +81,7 @@ services:
 
 volumes:
   postgres_data:
+  mysql_data:
   backend_data:
 
 networks:

@@ -5,7 +5,7 @@ from datetime import datetime
 
 import asyncpg
 
-from app.models.database import ColumnMetadata, DatabaseMetadata, TableMetadata
+from app.models.database import ColumnMetadata, DatabaseMetadata, DatabaseType, TableMetadata
 from app.services.connection import ConnectionService
 
 
@@ -51,6 +51,7 @@ class MetadataService:
 
             return DatabaseMetadata(
                 database_name=database_name,
+                database_type=DatabaseType.POSTGRESQL,
                 tables=tables,
                 views=views,
                 table_count=len(tables),

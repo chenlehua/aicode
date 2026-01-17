@@ -6,8 +6,9 @@ import time
 from openai import OpenAI
 
 from app.config import settings
-from app.models.database import DatabaseMetadata
+from app.models.database import DatabaseMetadata, DatabaseType
 from app.services.query import QueryService
+from app.services.query_mysql import MySQLQueryService
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -26,14 +27,18 @@ class LLMService:
 
     def format_metadata_prompt(self, metadata: DatabaseMetadata) -> str:
         """Format database metadata into a prompt context for LLM."""
+        db_type = metadata.database_type
+        db_type_name = "MySQL" if db_type == DatabaseType.MYSQL else "PostgreSQL"
+
         prompt_parts = [
             (
-                "You are a SQL expert. Generate PostgreSQL SELECT queries "
+                f"You are a SQL expert. Generate {db_type_name} SELECT queries "
                 "based on natural language descriptions."
             ),
             "",
             "Database Schema:",
             f"Database: {metadata.database_name}",
+            f"Database Type: {db_type_name}",
             "",
         ]
 
@@ -61,7 +66,7 @@ class LLMService:
             prompt_parts.append("")
 
         prompt_parts.append(
-            "Generate only valid PostgreSQL SELECT queries. "
+            f"Generate only valid {db_type_name} SELECT queries. "
             "Do not include any explanations or markdown formatting, just the SQL query."
         )
 
@@ -130,8 +135,12 @@ class LLMService:
                 generated_sql = "\n".join(lines).strip()
                 logger.debug(f"  Cleaned SQL:\n{generated_sql}")
 
-            # Validate the generated SQL
-            is_valid, error_msg = QueryService.validate_sql(generated_sql)
+            # Validate the generated SQL based on database type
+            db_type = metadata.database_type
+            if db_type == DatabaseType.MYSQL:
+                is_valid, error_msg = MySQLQueryService.validate_sql(generated_sql)
+            else:
+                is_valid, error_msg = QueryService.validate_sql(generated_sql)
             if not is_valid:
                 logger.warning(f"[LLM Validation] Generated SQL is invalid: {error_msg}")
                 raise ValueError(f"Generated SQL is invalid: {error_msg or 'Unknown error'}")

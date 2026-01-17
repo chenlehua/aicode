@@ -9,11 +9,11 @@ from fastapi.responses import Response
 from app.models.database import DatabaseCreate
 from app.models.error import ErrorResponse
 from app.models.query import GeneratedSQL, NaturalQueryRequest, QueryRequest
-from app.services.connection import ConnectionService
+from app.services.connection_factory import ConnectionFactory
 from app.services.database import DatabaseService
 from app.services.history import HistoryService
 from app.services.llm import LLMService
-from app.services.query import QueryService
+from app.services.query_factory import QueryFactory
 
 router = APIRouter()
 
@@ -41,7 +41,7 @@ async def upsert_database(name: str, request: DatabaseCreate) -> dict[str, Any]:
         )
 
     # Test connection
-    if not await ConnectionService.test_connection(request.url):
+    if not await ConnectionFactory.test_connection(request.url):
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=ErrorResponse(
@@ -94,7 +94,7 @@ async def delete_database(name: str) -> Response:
     # Close connection pool if exists
     database = await DatabaseService.get_database(name)
     if database:
-        await ConnectionService.close_pool(database.url)
+        await ConnectionFactory.close_pool(database.url)
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -114,8 +114,8 @@ async def execute_query(name: str, request: QueryRequest) -> dict[str, Any]:
 
     start_time = time.time()
     try:
-        # Execute query
-        result = await QueryService.execute_query(name, database.url, request.sql)
+        # Execute query using factory
+        result = await QueryFactory.execute_query(name, database.url, request.sql)
 
         # Save to history
         await HistoryService.save_query(
