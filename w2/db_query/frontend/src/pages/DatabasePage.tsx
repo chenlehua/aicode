@@ -1,6 +1,6 @@
 /** Database page showing selected database metadata. */
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button, Spin, Alert, Tabs, message, Input } from 'antd';
 import {
@@ -21,6 +21,18 @@ import { SqlEditor } from '../components/SqlEditor';
 import { ResultsTable } from '../components/ResultsTable';
 import { NaturalLanguageInput } from '../components/NaturalLanguageInput';
 import { apiFetch } from '../services/api';
+import type { QueryResult } from '../types';
+
+// Store for preserving state across database switches
+interface DatabaseState {
+  sql: string;
+  naturalPrompt: string;
+  queryTab: 'manual' | 'natural';
+  result: QueryResult | null;
+  error: string | null;
+}
+
+const databaseStateStore = new Map<string, DatabaseState>();
 
 export function DatabasePage() {
   const { name } = useParams<{ name: string }>();
@@ -29,13 +41,51 @@ export function DatabasePage() {
   const [naturalPrompt, setNaturalPrompt] = useState('');
   const [queryTab, setQueryTab] = useState<'manual' | 'natural'>('manual');
   const [schemaSearch, setSchemaSearch] = useState('');
+  const prevNameRef = useRef<string | null>(null);
 
   const {
     executeQuery,
     loading: queryLoading,
     result,
     error,
+    reset: resetQuery,
+    setResult,
+    setError,
   } = useQuery(name || '');
+
+  // Save current state before switching and restore state for new database
+  useEffect(() => {
+    const currentName = name || '';
+
+    // Save previous database state
+    if (prevNameRef.current && prevNameRef.current !== currentName) {
+      databaseStateStore.set(prevNameRef.current, {
+        sql,
+        naturalPrompt,
+        queryTab,
+        result,
+        error,
+      });
+    }
+
+    // Restore or initialize state for current database
+    const savedState = databaseStateStore.get(currentName);
+    if (savedState) {
+      setSql(savedState.sql);
+      setNaturalPrompt(savedState.naturalPrompt);
+      setQueryTab(savedState.queryTab);
+      setResult(savedState.result);
+      setError(savedState.error);
+    } else {
+      setSql('SELECT * FROM ');
+      setNaturalPrompt('');
+      setQueryTab('manual');
+      resetQuery();
+    }
+
+    setSchemaSearch('');
+    prevNameRef.current = currentName;
+  }, [name]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const {
     generateSQL,
@@ -124,27 +174,34 @@ export function DatabasePage() {
       {/* Top Header Bar */}
       <div className="bg-white border-b border-border-light flex items-stretch shadow-xs">
         {/* Left: Database Info (aligned with schema browser width) */}
-        <div className="w-72 border-r border-border-light p-4 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-accent-primary flex items-center justify-center">
-              <DatabaseOutlined className="text-text-primary" />
+        <div className="w-72 border-r border-border-light p-4 flex flex-col justify-center flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-accent-primary flex items-center justify-center">
+                <DatabaseOutlined className="text-text-primary" />
+              </div>
+              <div>
+                <h2 className="font-bold text-sm text-text-primary">
+                  {database.name}
+                </h2>
+                <p className="text-xs text-text-tertiary">PostgreSQL</p>
+              </div>
             </div>
-            <div>
-              <h2 className="font-bold text-sm text-text-primary">
-                {database.name}
-              </h2>
-              <p className="text-xs text-text-tertiary">PostgreSQL</p>
-            </div>
+            <Button
+              size="small"
+              icon={<ReloadOutlined />}
+              onClick={handleRefreshMetadata}
+              loading={isLoading}
+              className="font-medium text-xs"
+            >
+              刷新
+            </Button>
           </div>
-          <Button
-            size="small"
-            icon={<ReloadOutlined />}
-            onClick={handleRefreshMetadata}
-            loading={isLoading}
-            className="font-medium text-xs"
-          >
-            刷新
-          </Button>
+          {database.description && (
+            <p className="text-xs text-text-secondary mt-2 pl-12 line-clamp-2" title={database.description}>
+              {database.description}
+            </p>
+          )}
         </div>
 
         {/* Right: Statistics Cards */}

@@ -21,13 +21,14 @@ class DatabaseService:
         db = await get_db()
         try:
             cursor = await db.execute(
-                "SELECT name, url, created_at, updated_at FROM databases ORDER BY name"
+                "SELECT name, url, description, created_at, updated_at FROM databases ORDER BY name"
             )
             rows = await cursor.fetchall()
             return [
                 DatabaseResponse(
                     name=row["name"],
                     url=row["url"],
+                    description=row["description"] or "",
                     created_at=datetime.fromisoformat(row["created_at"]),
                     updated_at=datetime.fromisoformat(row["updated_at"]),
                 )
@@ -43,7 +44,7 @@ class DatabaseService:
         try:
             # Get database connection info
             cursor = await db.execute(
-                "SELECT name, url, created_at, updated_at FROM databases WHERE name = ?",
+                "SELECT name, url, description, created_at, updated_at FROM databases WHERE name = ?",
                 (name,),
             )
             db_row = await cursor.fetchone()
@@ -112,6 +113,7 @@ class DatabaseService:
             return DatabaseWithMetadata(
                 name=db_row["name"],
                 url=db_row["url"],
+                description=db_row["description"] or "",
                 created_at=datetime.fromisoformat(db_row["created_at"]),
                 updated_at=datetime.fromisoformat(db_row["updated_at"]),
                 metadata=metadata,
@@ -120,7 +122,9 @@ class DatabaseService:
             await db.close()
 
     @staticmethod
-    async def create_or_update_database(name: str, url: str) -> DatabaseWithMetadata:
+    async def create_or_update_database(
+        name: str, url: str, description: str = ""
+    ) -> DatabaseWithMetadata:
         """Create or update a database connection and fetch metadata."""
         db = await get_db()
         try:
@@ -130,13 +134,14 @@ class DatabaseService:
             # Upsert database connection
             await db.execute(
                 """
-                INSERT INTO databases (name, url, created_at, updated_at)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO databases (name, url, description, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?)
                 ON CONFLICT(name) DO UPDATE SET
                     url = excluded.url,
+                    description = excluded.description,
                     updated_at = excluded.updated_at
                 """,
-                (name, url, now_iso, now_iso),
+                (name, url, description, now_iso, now_iso),
             )
 
             # Fetch and cache metadata
@@ -168,6 +173,7 @@ class DatabaseService:
             return DatabaseWithMetadata(
                 name=name,
                 url=url,
+                description=description,
                 created_at=now,
                 updated_at=now,
                 metadata=metadata,

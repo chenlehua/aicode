@@ -3,6 +3,7 @@
 export interface Database {
   name: string;
   url: string;
+  description?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -34,7 +35,14 @@ export interface DatabaseMetadata {
 }
 
 export interface DatabaseWithMetadata extends Database {
+  description?: string;
   metadata: DatabaseMetadata;
+}
+
+export interface DatabaseFormData {
+  name: string;
+  url: string;
+  description?: string;
 }
 
 export interface QueryRequest {

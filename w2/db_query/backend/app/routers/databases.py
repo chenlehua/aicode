@@ -51,7 +51,9 @@ async def upsert_database(name: str, request: DatabaseCreate) -> dict[str, Any]:
         )
 
     try:
-        result = await DatabaseService.create_or_update_database(name, request.url)
+        result = await DatabaseService.create_or_update_database(
+            name, request.url, request.description
+        )
         return result.model_dump(by_alias=True)
     except Exception as e:
         raise HTTPException(

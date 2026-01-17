@@ -57,10 +57,10 @@ const downloadFile = (content: string, filename: string, mimeType: string) => {
 export function ResultsTable({ result, loading }: ResultsTableProps) {
   const [pagination, setPagination] = useState<TablePaginationConfig>({
     current: 1,
-    pageSize: 10,
+    pageSize: 5,
     showSizeChanger: true,
     showTotal: (total) => `共 ${total} 行`,
-    pageSizeOptions: ['10', '25', '50', '100'],
+    pageSizeOptions: ['5', '10', '25', '50', '100'],
   });
 
   // Reset to first page when result changes

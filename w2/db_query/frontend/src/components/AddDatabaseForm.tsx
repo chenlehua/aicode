@@ -1,31 +1,58 @@
-/** Component for adding a new database connection. */
+/** Component for adding or editing a database connection. */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Form, Input, Button, message } from 'antd';
-import { DatabaseOutlined, LinkOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { DatabaseOutlined, LinkOutlined, CheckCircleOutlined, FileTextOutlined } from '@ant-design/icons';
 import { apiFetch } from '../services/api';
+import type { Database } from '../types';
 
-interface AddDatabaseFormProps {
+const { TextArea } = Input;
+
+interface DatabaseFormProps {
+  /** Existing database data for edit mode */
+  database?: Database;
+  /** Whether the form is in view-only mode */
+  viewOnly?: boolean;
+  /** Callback on successful save */
   onSuccess?: () => void;
+  /** Callback to cancel/close */
+  onCancel?: () => void;
 }
 
-export function AddDatabaseForm({ onSuccess }: AddDatabaseFormProps) {
+export function AddDatabaseForm({ database, viewOnly = false, onSuccess, onCancel }: DatabaseFormProps) {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const isEditMode = !!database;
 
-  const handleSubmit = async (values: { name: string; url: string }) => {
+  // Populate form when editing
+  useEffect(() => {
+    if (database) {
+      form.setFieldsValue({
+        name: database.name,
+        url: database.url,
+        description: database.description || '',
+      });
+    } else {
+      form.resetFields();
+    }
+  }, [database, form]);
+
+  const handleSubmit = async (values: { name: string; url: string; description?: string }) => {
     setLoading(true);
     try {
       await apiFetch(`/dbs/${values.name}`, {
         method: 'PUT',
-        body: JSON.stringify({ url: values.url }),
+        body: JSON.stringify({
+          url: values.url,
+          description: values.description || '',
+        }),
       });
-      message.success(`数据库 "${values.name}" 添加成功`);
+      message.success(isEditMode ? `数据库 "${values.name}" 更新成功` : `数据库 "${values.name}" 添加成功`);
       form.resetFields();
       onSuccess?.();
     } catch (error: unknown) {
       const err = error as { message?: string; error?: string };
-      message.error(err.message || err.error || '添加数据库连接失败');
+      message.error(err.message || err.error || (isEditMode ? '更新数据库连接失败' : '添加数据库连接失败'));
     } finally {
       setLoading(false);
     }
@@ -39,6 +66,7 @@ export function AddDatabaseForm({ onSuccess }: AddDatabaseFormProps) {
         onFinish={handleSubmit}
         autoComplete="off"
         requiredMark={false}
+        disabled={viewOnly}
       >
         <Form.Item
           label={
@@ -59,6 +87,7 @@ export function AddDatabaseForm({ onSuccess }: AddDatabaseFormProps) {
           <Input
             placeholder="例如：production_db"
             className="h-11 rounded-xl"
+            disabled={isEditMode} // Name cannot be changed in edit mode
           />
         </Form.Item>
 
@@ -78,9 +107,11 @@ export function AddDatabaseForm({ onSuccess }: AddDatabaseFormProps) {
             },
           ]}
           extra={
-            <span className="text-xs text-text-tertiary mt-1 block">
-              格式：postgres://用户名:密码@主机:端口/数据库名
-            </span>
+            !viewOnly && (
+              <span className="text-xs text-text-tertiary mt-1 block">
+                格式：postgres://用户名:密码@主机:端口/数据库名
+              </span>
+            )
           }
         >
           <Input
@@ -89,31 +120,71 @@ export function AddDatabaseForm({ onSuccess }: AddDatabaseFormProps) {
           />
         </Form.Item>
 
-        <Form.Item className="mb-0 mt-6">
-          <Button
-            type="primary"
-            htmlType="submit"
-            icon={<CheckCircleOutlined />}
-            loading={loading}
-            block
-            className="h-12 text-base font-semibold"
-          >
-            添加数据库
-          </Button>
+        <Form.Item
+          label={
+            <span className="flex items-center gap-2 text-sm font-medium text-text-primary">
+              <FileTextOutlined className="text-accent-green" />
+              描述
+              <span className="text-text-tertiary font-normal">（可选）</span>
+            </span>
+          }
+          name="description"
+        >
+          <TextArea
+            placeholder="添加数据库描述，例如：生产环境主数据库"
+            className="rounded-xl"
+            rows={3}
+            maxLength={500}
+            showCount
+          />
         </Form.Item>
+
+        {!viewOnly && (
+          <Form.Item className="mb-0 mt-6">
+            <div className="flex gap-3">
+              {onCancel && (
+                <Button
+                  onClick={onCancel}
+                  className="flex-1 h-12 text-base font-medium"
+                >
+                  取消
+                </Button>
+              )}
+              <Button
+                type="primary"
+                htmlType="submit"
+                icon={<CheckCircleOutlined />}
+                loading={loading}
+                className={`h-12 text-base font-semibold ${onCancel ? 'flex-1' : 'w-full'}`}
+              >
+                {isEditMode ? '保存修改' : '添加数据库'}
+              </Button>
+            </div>
+          </Form.Item>
+        )}
+
+        {viewOnly && onCancel && (
+          <Form.Item className="mb-0 mt-6">
+            <Button onClick={onCancel} block className="h-12 text-base font-medium">
+              关闭
+            </Button>
+          </Form.Item>
+        )}
       </Form>
 
       {/* Helper Tips */}
-      <div className="mt-6 p-4 bg-bg-secondary rounded-xl">
-        <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide mb-2">
-          支持的数据库
-        </p>
-        <div className="flex items-center gap-2">
-          <span className="px-2.5 py-1 bg-accent-blue/10 text-accent-blue text-xs font-medium rounded-full">
-            PostgreSQL
-          </span>
+      {!viewOnly && !isEditMode && (
+        <div className="mt-6 p-4 bg-bg-secondary rounded-xl">
+          <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide mb-2">
+            支持的数据库
+          </p>
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-1 bg-accent-blue/10 text-accent-blue text-xs font-medium rounded-full">
+              PostgreSQL
+            </span>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

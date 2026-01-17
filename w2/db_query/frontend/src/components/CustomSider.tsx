@@ -2,18 +2,28 @@
 
 import { useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Button, Empty, Skeleton, Modal, message, Input } from 'antd';
-import { PlusOutlined, DeleteOutlined, DatabaseOutlined, SearchOutlined } from '@ant-design/icons';
+import { Button, Empty, Skeleton, Modal, message, Input, Tooltip } from 'antd';
+import {
+  PlusOutlined,
+  DeleteOutlined,
+  DatabaseOutlined,
+  SearchOutlined,
+  EditOutlined,
+  EyeOutlined,
+} from '@ant-design/icons';
 import { useDatabases } from '../hooks/useDatabases';
 import { AddDatabaseForm } from './AddDatabaseForm';
 import { apiFetch } from '../services/api';
 import type { Database } from '../types';
 
+type ModalMode = 'add' | 'edit' | 'view' | null;
+
 export function CustomSider() {
   const navigate = useNavigate();
   const location = useLocation();
   const { data: databases, isLoading, refetch } = useDatabases();
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<ModalMode>(null);
+  const [selectedDatabase, setSelectedDatabase] = useState<Database | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [searchText, setSearchText] = useState('');
 
@@ -24,7 +34,8 @@ export function CustomSider() {
     const lower = searchText.toLowerCase();
     return databases.filter(db =>
       db.name.toLowerCase().includes(lower) ||
-      db.url.toLowerCase().includes(lower)
+      db.url.toLowerCase().includes(lower) ||
+      (db.description || '').toLowerCase().includes(lower)
     );
   }, [databases, searchText]);
 
@@ -32,16 +43,30 @@ export function CustomSider() {
     navigate(`/databases/${database.name}`);
   };
 
-  const handleOpenModal = () => {
-    setIsModalOpen(true);
+  const handleOpenAddModal = () => {
+    setSelectedDatabase(null);
+    setModalMode('add');
+  };
+
+  const handleOpenEditModal = (db: Database, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedDatabase(db);
+    setModalMode('edit');
+  };
+
+  const handleOpenViewModal = (db: Database, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedDatabase(db);
+    setModalMode('view');
   };
 
   const handleCloseModal = () => {
-    setIsModalOpen(false);
+    setModalMode(null);
+    setSelectedDatabase(null);
   };
 
-  const handleAddSuccess = () => {
-    setIsModalOpen(false);
+  const handleFormSuccess = () => {
+    handleCloseModal();
     refetch();
   };
 
@@ -78,6 +103,40 @@ export function CustomSider() {
     return location.pathname === `/databases/${dbName}`;
   };
 
+  const getModalTitle = () => {
+    switch (modalMode) {
+      case 'add':
+        return (
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-accent-primary flex items-center justify-center">
+              <PlusOutlined className="text-text-primary" />
+            </div>
+            <span className="text-lg font-semibold">添加数据库连接</span>
+          </div>
+        );
+      case 'edit':
+        return (
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-accent-blue flex items-center justify-center">
+              <EditOutlined className="text-white" />
+            </div>
+            <span className="text-lg font-semibold">编辑数据库连接</span>
+          </div>
+        );
+      case 'view':
+        return (
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-accent-green flex items-center justify-center">
+              <EyeOutlined className="text-white" />
+            </div>
+            <span className="text-lg font-semibold">查看数据库详情</span>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="sidebar">
       {/* Header */}
@@ -96,7 +155,7 @@ export function CustomSider() {
         <Button
           type="primary"
           icon={<PlusOutlined />}
-          onClick={handleOpenModal}
+          onClick={handleOpenAddModal}
           block
           className="h-11 text-sm font-semibold"
         >
@@ -146,12 +205,12 @@ export function CustomSider() {
               >
                 <div className="flex items-center justify-between w-full">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
                       isDatabaseSelected(db.name)
                         ? 'bg-accent-primary'
                         : 'bg-accent-green/20 group-hover:bg-accent-green/30'
                     }`}>
-                      <DatabaseOutlined className={`text-base ${
+                      <DatabaseOutlined className={`text-sm ${
                         isDatabaseSelected(db.name) ? 'text-text-primary' : 'text-accent-green'
                       }`} />
                     </div>
@@ -160,19 +219,41 @@ export function CustomSider() {
                         {db.name}
                       </div>
                       <div className="text-xs text-text-tertiary truncate">
-                        {db.url.split('/').pop()?.split('?')[0] || 'database'}
+                        {db.description || db.url.split('/').pop()?.split('?')[0] || 'database'}
                       </div>
                     </div>
                   </div>
-                  <Button
-                    type="text"
-                    danger
-                    size="small"
-                    icon={<DeleteOutlined />}
-                    onClick={(e) => handleDelete(db.name, e)}
-                    loading={deleting === db.name}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-2"
-                  />
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-1">
+                    <Tooltip title="查看">
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<EyeOutlined />}
+                        onClick={(e) => handleOpenViewModal(db, e)}
+                        className="text-text-tertiary hover:text-accent-blue hover:bg-accent-blue/10"
+                      />
+                    </Tooltip>
+                    <Tooltip title="编辑">
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<EditOutlined />}
+                        onClick={(e) => handleOpenEditModal(db, e)}
+                        className="text-text-tertiary hover:text-accent-primary hover:bg-accent-primary/10"
+                      />
+                    </Tooltip>
+                    <Tooltip title="删除">
+                      <Button
+                        type="text"
+                        size="small"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={(e) => handleDelete(db.name, e)}
+                        loading={deleting === db.name}
+                        className="text-text-tertiary hover:text-error"
+                      />
+                    </Tooltip>
+                  </div>
                 </div>
               </div>
             ))}
@@ -187,22 +268,21 @@ export function CustomSider() {
         </p>
       </div>
 
-      {/* Add Database Modal */}
+      {/* Add/Edit/View Database Modal */}
       <Modal
-        title={
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-accent-primary flex items-center justify-center">
-              <PlusOutlined className="text-text-primary" />
-            </div>
-            <span className="text-lg font-semibold">添加数据库连接</span>
-          </div>
-        }
-        open={isModalOpen}
+        title={getModalTitle()}
+        open={modalMode !== null}
         onCancel={handleCloseModal}
         footer={null}
         width={520}
+        destroyOnClose
       >
-        <AddDatabaseForm onSuccess={handleAddSuccess} />
+        <AddDatabaseForm
+          database={selectedDatabase || undefined}
+          viewOnly={modalMode === 'view'}
+          onSuccess={handleFormSuccess}
+          onCancel={handleCloseModal}
+        />
       </Modal>
     </div>
   );

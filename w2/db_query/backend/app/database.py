@@ -24,11 +24,18 @@ async def init_db() -> None:
             CREATE TABLE IF NOT EXISTS databases (
                 name TEXT PRIMARY KEY,
                 url TEXT NOT NULL,
+                description TEXT DEFAULT '',
                 created_at TEXT NOT NULL DEFAULT (datetime('now')),
                 updated_at TEXT NOT NULL DEFAULT (datetime('now'))
             )
             """
         )
+
+        # Add description column if not exists (for migration)
+        try:
+            await db.execute("ALTER TABLE databases ADD COLUMN description TEXT DEFAULT ''")
+        except Exception:
+            pass  # Column already exists
 
         # Create metadata table
         await db.execute(

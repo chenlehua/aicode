@@ -1,6 +1,6 @@
 /** Custom hooks for query operations. */
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { apiFetch } from '../services/api';
 import type { QueryRequest, QueryResult } from '../types';
 
@@ -41,10 +41,19 @@ export function useQuery(databaseName: string, options?: UseQueryOptions) {
     }
   };
 
+  const reset = useCallback(() => {
+    setLoading(false);
+    setResult(null);
+    setError(null);
+  }, []);
+
   return {
     executeQuery,
     loading,
     result,
     error,
+    reset,
+    setResult,
+    setError,
   };
 }

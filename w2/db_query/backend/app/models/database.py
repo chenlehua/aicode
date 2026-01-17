@@ -11,6 +11,7 @@ class DatabaseCreate(CamelModel):
     """Request model for creating/updating a database connection."""
 
     url: str = Field(..., pattern=r"^postgres(ql)?://.*")
+    description: str = Field(default="", max_length=500)
 
 
 class DatabaseResponse(CamelModel):
@@ -18,6 +19,7 @@ class DatabaseResponse(CamelModel):
 
     name: str
     url: str
+    description: str = ""
     created_at: datetime
     updated_at: datetime
 
@@ -59,6 +61,7 @@ class DatabaseWithMetadata(CamelModel):
 
     name: str
     url: str
+    description: str = ""
     created_at: datetime | None = None
     updated_at: datetime | None = None
     metadata: DatabaseMetadata
