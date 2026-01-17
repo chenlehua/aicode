@@ -8,3 +8,8 @@
 仔细浏览https://motherduck.com/，分析其页面的设计风格，抽取设计风格的核心要素，如border/padding/margin/font/color/typographics/components,撰写一个可以复刻motherduck的网站设计风格。
 
 生成一个 motherduck 风格的前端设计 rules 放在 .cursor/rules/motherduck-style.md ，以下我获取到的要素：
+
+
+## 更换网站设计风格
+
+@.cursor/rules/motherduck-style.md 基于新的设计风格，把./sites 的整体风格重构一下

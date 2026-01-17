@@ -26,7 +26,7 @@ dev-backend: ## Run backend development server
 	cd $(BACKEND_DIR) && uv run uvicorn app.main:app --reload --host 0.0.0.0 --port $(BACKEND_PORT)
 
 dev-frontend: ## Run frontend development server
-	cd $(FRONTEND_DIR) && npm run dev
+	cd $(FRONTEND_DIR) && npm install &&npm run dev
 
 # Build
 build: build-backend build-frontend ## Build both backend and frontend
