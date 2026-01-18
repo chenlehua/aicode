@@ -43,7 +43,7 @@
 
 ## 使用 nnnoiseless
 
-使用nnnoiseless来处理噪音， 是的转译结果更加准确
+使用nnnoiseless来处理噪音， 使得转译结果更加准确
 
 ## 使用简体中文
 

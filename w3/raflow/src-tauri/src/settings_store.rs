@@ -58,7 +58,7 @@ mod tests {
     #[test]
     fn test_default_settings() {
         let settings = AppSettings::default();
-        assert_eq!(settings.language_code, "zh");
+        assert_eq!(settings.language_code, "zho");
         assert_eq!(settings.sample_rate, 16000);
         assert!(settings.vad_enabled);
     }

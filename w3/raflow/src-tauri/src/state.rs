@@ -18,7 +18,7 @@ impl Default for AppSettings {
     fn default() -> Self {
         Self {
             api_key: String::new(),
-            language_code: "zh".to_string(),
+            language_code: "zho".to_string(), // Chinese (中文)
             sample_rate: 16000,
             vad_enabled: true,
             vad_silence_threshold: 0.5, // Low threshold for faster real-time response
@@ -218,7 +218,7 @@ mod tests {
         let state = create_app_state();
 
         let settings = state.get_settings();
-        assert_eq!(settings.language_code, "zh");
+        assert_eq!(settings.language_code, "zho");
 
         let mut new_settings = (*settings).clone();
         new_settings.language_code = "en".to_string();

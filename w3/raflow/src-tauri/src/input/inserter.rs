@@ -56,8 +56,10 @@ impl TextInserter {
             log::warn!("AppleScript paste failed: {:?}", result);
         }
 
-        // Fallback to enigo
-        self.paste_with_enigo()
+        // Note: enigo must be called from main thread on macOS
+        // Since we're often in a background thread, just report clipboard fallback
+        log::warn!("AppleScript paste failed, text is in clipboard");
+        Ok(InsertResult::CopiedToClipboard)
     }
 
     /// Insert text via clipboard paste (legacy, uses current frontmost app)
@@ -115,6 +117,65 @@ impl TextInserter {
         Ok(InsertResult::CopiedToClipboard)
     }
 
+    /// Send Cmd+V keystroke using enigo (MUST be called from main thread on macOS!)
+    pub fn send_paste_keystroke() -> Result<()> {
+        use enigo::{Direction, Enigo, Key, Keyboard, Settings};
+
+        log::info!("Sending Cmd+V from main thread...");
+
+        let mut enigo = Enigo::new(&Settings::default())
+            .map_err(|e| AppError::Input(format!("Failed to create Enigo: {}", e)))?;
+
+        #[cfg(target_os = "macos")]
+        let modifier = Key::Meta;
+        #[cfg(not(target_os = "macos"))]
+        let modifier = Key::Control;
+
+        // Press modifier key
+        enigo.key(modifier, Direction::Press)
+            .map_err(|e| AppError::Input(format!("Failed to press modifier: {}", e)))?;
+
+        thread::sleep(Duration::from_millis(20));
+
+        // Press V key
+        enigo.key(Key::Unicode('v'), Direction::Click)
+            .map_err(|e| AppError::Input(format!("Failed to press V: {}", e)))?;
+
+        thread::sleep(Duration::from_millis(20));
+
+        // Release modifier key
+        enigo.key(modifier, Direction::Release)
+            .map_err(|e| AppError::Input(format!("Failed to release modifier: {}", e)))?;
+
+        thread::sleep(Duration::from_millis(50));
+        log::info!("Cmd+V sent successfully from main thread");
+        Ok(())
+    }
+
+    /// Send backspace keystrokes using enigo (MUST be called from main thread on macOS!)
+    pub fn send_backspace_keystrokes(count: usize) -> Result<()> {
+        use enigo::{Direction, Enigo, Key, Keyboard, Settings};
+
+        if count == 0 {
+            return Ok(());
+        }
+
+        log::info!("Sending {} backspaces from main thread...", count);
+
+        let mut enigo = Enigo::new(&Settings::default())
+            .map_err(|e| AppError::Input(format!("Failed to create Enigo: {}", e)))?;
+
+        for _ in 0..count {
+            enigo.key(Key::Backspace, Direction::Click)
+                .map_err(|e| AppError::Input(format!("Failed to press backspace: {}", e)))?;
+            thread::sleep(Duration::from_millis(5));
+        }
+
+        thread::sleep(Duration::from_millis(30));
+        log::info!("Backspaces sent successfully");
+        Ok(())
+    }
+
     /// Replace previously inserted partial text with new text
     /// This is used for real-time text updates during speech recognition
     pub fn replace_partial_text(
@@ -149,7 +210,21 @@ impl TextInserter {
             }
         }
 
-        // Fallback: just insert (may result in duplicate text)
+        // Fallback: just insert via AppleScript (avoid enigo on non-main thread)
+        #[cfg(target_os = "macos")]
+        {
+            if let Some(app) = target_app {
+                let result = activate_and_paste(app);
+                if result.is_ok() {
+                    return Ok(InsertResult::Inserted);
+                }
+            }
+            // Last resort: just copy to clipboard
+            log::warn!("Could not insert text automatically, text is in clipboard");
+            return Ok(InsertResult::CopiedToClipboard);
+        }
+        
+        #[cfg(not(target_os = "macos"))]
         self.insert_text_to_app(new_text, target_app)
     }
 }

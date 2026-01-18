@@ -158,20 +158,24 @@ async fn start_recording_internal(state: &AppStateHandle, app: &AppHandle) -> Re
                         new_text.chars().count()
                     );
 
-                    std::thread::spawn(move || {
-                        match TextInserter::new() {
-                            Ok(mut inserter) => {
-                                if let Err(e) = inserter.replace_partial_text(
-                                    old_len,
-                                    &new_text,
-                                    target.as_deref(),
-                                ) {
-                                    log::error!("Failed to replace partial text: {}", e);
-                                }
+                    // Copy text to clipboard first (can be done from any thread)
+                    if let Ok(mut inserter) = TextInserter::new() {
+                        let _ = inserter.copy_to_clipboard(&new_text);
+                    }
+
+                    // Use main thread to send keystrokes (required for macOS accessibility)
+                    let app_for_keys = app_clone.clone();
+                    let _ = app_for_keys.run_on_main_thread(move || {
+                        // Delete old text with backspaces
+                        if old_len > 0 {
+                            if let Err(e) = TextInserter::send_backspace_keystrokes(old_len) {
+                                log::error!("Failed to send backspaces: {}", e);
+                                return;
                             }
-                            Err(e) => {
-                                log::error!("Failed to create text inserter: {}", e);
-                            }
+                        }
+                        // Paste new text
+                        if let Err(e) = TextInserter::send_paste_keystroke() {
+                            log::error!("Failed to send paste keystroke: {}", e);
                         }
                     });
                 }
@@ -194,21 +198,24 @@ async fn start_recording_internal(state: &AppStateHandle, app: &AppHandle) -> Re
                     let committed_text = format!("{} ", text);
                     last_partial_text.clear(); // Reset for next segment
 
-                    std::thread::spawn(move || {
-                        match TextInserter::new() {
-                            Ok(mut inserter) => {
-                                // Replace partial with final committed text + space
-                                if let Err(e) = inserter.replace_partial_text(
-                                    old_len,
-                                    &committed_text,
-                                    target.as_deref(),
-                                ) {
-                                    log::error!("Failed to insert committed text: {}", e);
-                                }
+                    // Copy text to clipboard first (can be done from any thread)
+                    if let Ok(mut inserter) = TextInserter::new() {
+                        let _ = inserter.copy_to_clipboard(&committed_text);
+                    }
+
+                    // Use main thread to send keystrokes (required for macOS accessibility)
+                    let app_for_keys = app_clone.clone();
+                    let _ = app_for_keys.run_on_main_thread(move || {
+                        // Delete old text with backspaces
+                        if old_len > 0 {
+                            if let Err(e) = TextInserter::send_backspace_keystrokes(old_len) {
+                                log::error!("Failed to send backspaces: {}", e);
+                                return;
                             }
-                            Err(e) => {
-                                log::error!("Failed to create text inserter: {}", e);
-                            }
+                        }
+                        // Paste new text
+                        if let Err(e) = TextInserter::send_paste_keystroke() {
+                            log::error!("Failed to send paste keystroke: {}", e);
                         }
                     });
                 }
