@@ -2,8 +2,10 @@ use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{SampleRate, StreamConfig};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::Mutex;
 use tokio::sync::mpsc;
 
+use super::denoise::{AudioDenoiser, DENOISE_SAMPLE_RATE, resample};
 use crate::error::{AppError, Result};
 
 pub struct AudioCapture {
@@ -96,14 +98,12 @@ impl AudioCapture {
 
         let err_fn = |err| log::error!("Audio stream error: {}", err);
 
-        // Calculate resampling ratio
-        let resample_ratio = target_sample_rate as f64 / actual_sample_rate as f64;
-        let need_resample = (resample_ratio - 1.0).abs() > 0.001;
+        log::info!("Audio pipeline: {}Hz -> 48kHz (denoise) -> {}Hz",
+            actual_sample_rate, target_sample_rate);
 
-        if need_resample {
-            log::info!("Will resample from {}Hz to {}Hz (ratio: {:.4})",
-                actual_sample_rate, target_sample_rate, resample_ratio);
-        }
+        // Create shared denoiser
+        let denoiser = Arc::new(Mutex::new(AudioDenoiser::new()));
+        log::info!("Audio denoiser initialized (nnnoiseless @ 48kHz)");
 
         let stream = match sample_format {
             cpal::SampleFormat::F32 => {
@@ -111,6 +111,8 @@ impl AudioCapture {
                 let recording = is_recording.clone();
                 let ch = channels as usize;
                 let mut callback_count = 0u32;
+                let denoiser_clone = denoiser.clone();
+                let source_rate = actual_sample_rate;
                 device.build_input_stream(
                     &config,
                     move |data: &[f32], _| {
@@ -119,7 +121,7 @@ impl AudioCapture {
                             if callback_count == 1 || callback_count % 100 == 0 {
                                 log::info!("Audio callback #{}, {} samples", callback_count, data.len());
                             }
-                            // Convert to mono if stereo, then to i16
+                            // Convert to mono if stereo
                             let mono_f32: Vec<f32> = if ch == 2 {
                                 data.chunks(2)
                                     .map(|chunk| {
@@ -130,15 +132,29 @@ impl AudioCapture {
                                 data.to_vec()
                             };
 
-                            // Resample if needed
-                            let resampled = if need_resample {
-                                simple_resample(&mono_f32, resample_ratio)
+                            // Step 1: Upsample to 48kHz for denoising (if needed)
+                            let audio_48k = if source_rate != DENOISE_SAMPLE_RATE {
+                                resample(&mono_f32, source_rate, DENOISE_SAMPLE_RATE)
                             } else {
                                 mono_f32
                             };
 
+                            // Step 2: Apply noise reduction
+                            let denoised = if let Ok(mut dn) = denoiser_clone.lock() {
+                                dn.process(&audio_48k)
+                            } else {
+                                audio_48k
+                            };
+
+                            // Step 3: Downsample to target rate
+                            let final_audio = if DENOISE_SAMPLE_RATE != target_sample_rate {
+                                resample(&denoised, DENOISE_SAMPLE_RATE, target_sample_rate)
+                            } else {
+                                denoised
+                            };
+
                             // Convert to i16
-                            let pcm16: Vec<i16> = resampled
+                            let pcm16: Vec<i16> = final_audio
                                 .iter()
                                 .map(|&s| {
                                     let clamped = s.clamp(-1.0, 1.0);
@@ -160,6 +176,8 @@ impl AudioCapture {
                 let tx = audio_tx.clone();
                 let recording = is_recording.clone();
                 let ch = channels as usize;
+                let denoiser_clone = denoiser.clone();
+                let source_rate = actual_sample_rate;
                 device.build_input_stream(
                     &config,
                     move |data: &[i16], _| {
@@ -178,15 +196,29 @@ impl AudioCapture {
                                 data.iter().map(|&s| s as f32 / 32768.0).collect()
                             };
 
-                            // Resample if needed
-                            let resampled = if need_resample {
-                                simple_resample(&mono_f32, resample_ratio)
+                            // Step 1: Upsample to 48kHz for denoising
+                            let audio_48k = if source_rate != DENOISE_SAMPLE_RATE {
+                                resample(&mono_f32, source_rate, DENOISE_SAMPLE_RATE)
                             } else {
                                 mono_f32
                             };
 
+                            // Step 2: Apply noise reduction
+                            let denoised = if let Ok(mut dn) = denoiser_clone.lock() {
+                                dn.process(&audio_48k)
+                            } else {
+                                audio_48k
+                            };
+
+                            // Step 3: Downsample to target rate
+                            let final_audio = if DENOISE_SAMPLE_RATE != target_sample_rate {
+                                resample(&denoised, DENOISE_SAMPLE_RATE, target_sample_rate)
+                            } else {
+                                denoised
+                            };
+
                             // Convert back to i16
-                            let pcm16: Vec<i16> = resampled
+                            let pcm16: Vec<i16> = final_audio
                                 .iter()
                                 .map(|&s| {
                                     let clamped = s.clamp(-1.0, 1.0);
@@ -207,6 +239,8 @@ impl AudioCapture {
                 let tx = audio_tx.clone();
                 let recording = is_recording.clone();
                 let ch = channels as usize;
+                let denoiser_clone = denoiser.clone();
+                let source_rate = actual_sample_rate;
                 device.build_input_stream(
                     &config,
                     move |data: &[i32], _| {
@@ -225,15 +259,29 @@ impl AudioCapture {
                                 data.iter().map(|&s| s as f32 / 2147483648.0).collect()
                             };
 
-                            // Resample if needed
-                            let resampled = if need_resample {
-                                simple_resample(&mono_f32, resample_ratio)
+                            // Step 1: Upsample to 48kHz for denoising
+                            let audio_48k = if source_rate != DENOISE_SAMPLE_RATE {
+                                resample(&mono_f32, source_rate, DENOISE_SAMPLE_RATE)
                             } else {
                                 mono_f32
                             };
 
+                            // Step 2: Apply noise reduction
+                            let denoised = if let Ok(mut dn) = denoiser_clone.lock() {
+                                dn.process(&audio_48k)
+                            } else {
+                                audio_48k
+                            };
+
+                            // Step 3: Downsample to target rate
+                            let final_audio = if DENOISE_SAMPLE_RATE != target_sample_rate {
+                                resample(&denoised, DENOISE_SAMPLE_RATE, target_sample_rate)
+                            } else {
+                                denoised
+                            };
+
                             // Convert to i16
-                            let pcm16: Vec<i16> = resampled
+                            let pcm16: Vec<i16> = final_audio
                                 .iter()
                                 .map(|&s| {
                                     let clamped = s.clamp(-1.0, 1.0);
@@ -276,32 +324,6 @@ impl AudioCapture {
     pub fn is_recording(&self) -> bool {
         self.is_recording.load(Ordering::SeqCst)
     }
-}
-
-/// Simple linear interpolation resampling
-fn simple_resample(input: &[f32], ratio: f64) -> Vec<f32> {
-    if input.is_empty() {
-        return Vec::new();
-    }
-
-    let output_len = ((input.len() as f64) * ratio).ceil() as usize;
-    let mut output = Vec::with_capacity(output_len);
-
-    for i in 0..output_len {
-        let src_pos = i as f64 / ratio;
-        let src_idx = src_pos.floor() as usize;
-        let frac = src_pos - src_idx as f64;
-
-        if src_idx + 1 < input.len() {
-            // Linear interpolation
-            let sample = input[src_idx] * (1.0 - frac as f32) + input[src_idx + 1] * frac as f32;
-            output.push(sample);
-        } else if src_idx < input.len() {
-            output.push(input[src_idx]);
-        }
-    }
-
-    output
 }
 
 impl Default for AudioCapture {
