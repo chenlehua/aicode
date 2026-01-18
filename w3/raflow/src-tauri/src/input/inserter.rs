@@ -11,6 +11,66 @@ pub enum InsertResult {
     CopiedToClipboard,
 }
 
+/// Result of computing text diff for incremental update
+#[derive(Debug, Clone)]
+pub struct TextDiff {
+    /// Number of characters to delete (backspaces needed)
+    pub delete_count: usize,
+    /// Text to insert after deletion
+    pub insert_text: String,
+    /// Common prefix length (for debugging)
+    pub common_prefix_len: usize,
+}
+
+impl TextDiff {
+    /// Compute the minimal diff between old and new text
+    /// 
+    /// This finds the longest common prefix and only deletes/inserts
+    /// the differing suffix, significantly reducing keystrokes.
+    /// 
+    /// Example:
+    /// - old: "你好世" -> new: "你好世界"
+    /// - Result: delete_count=0, insert_text="界" (just append)
+    /// 
+    /// Example:
+    /// - old: "你好吗" -> new: "你好嘛"  
+    /// - Result: delete_count=1, insert_text="嘛" (replace last char)
+    pub fn compute(old_text: &str, new_text: &str) -> Self {
+        let old_chars: Vec<char> = old_text.chars().collect();
+        let new_chars: Vec<char> = new_text.chars().collect();
+
+        // Find common prefix length
+        let common_prefix_len = old_chars
+            .iter()
+            .zip(new_chars.iter())
+            .take_while(|(a, b)| a == b)
+            .count();
+
+        // Calculate what needs to be deleted and inserted
+        let delete_count = old_chars.len() - common_prefix_len;
+        let insert_text: String = new_chars[common_prefix_len..].iter().collect();
+
+        TextDiff {
+            delete_count,
+            insert_text,
+            common_prefix_len,
+        }
+    }
+
+    /// Check if this diff represents no change
+    pub fn is_empty(&self) -> bool {
+        self.delete_count == 0 && self.insert_text.is_empty()
+    }
+
+    /// Get the efficiency improvement compared to full replacement
+    /// Returns (old_operations, new_operations)
+    pub fn efficiency_stats(&self, old_len: usize, _new_len: usize) -> (usize, usize) {
+        let old_ops = old_len + 1; // old_len backspaces + 1 paste
+        let new_ops = self.delete_count + if self.insert_text.is_empty() { 0 } else { 1 };
+        (old_ops, new_ops)
+    }
+}
+
 pub struct TextInserter {
     clipboard: ClipboardManager,
 }
@@ -173,6 +233,28 @@ impl TextInserter {
 
         thread::sleep(Duration::from_millis(30));
         log::info!("Backspaces sent successfully");
+        Ok(())
+    }
+
+    /// Type text directly using enigo (MUST be called from main thread on macOS!)
+    /// This is faster than clipboard for short text
+    pub fn send_text_keystrokes(text: &str) -> Result<()> {
+        use enigo::{Enigo, Keyboard, Settings};
+
+        if text.is_empty() {
+            return Ok(());
+        }
+
+        log::info!("Typing '{}' ({} chars) from main thread...", text, text.chars().count());
+
+        let mut enigo = Enigo::new(&Settings::default())
+            .map_err(|e| AppError::Input(format!("Failed to create Enigo: {}", e)))?;
+
+        enigo.text(text)
+            .map_err(|e| AppError::Input(format!("Failed to type text: {}", e)))?;
+
+        thread::sleep(Duration::from_millis(30));
+        log::info!("Text typed successfully");
         Ok(())
     }
 
@@ -451,4 +533,88 @@ pub fn request_accessibility_permission() {
 #[cfg(not(target_os = "macos"))]
 pub fn request_accessibility_permission() {
     // No-op on other platforms
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_text_diff_append() {
+        // Pure append case: "你好" -> "你好世界"
+        let diff = TextDiff::compute("你好", "你好世界");
+        assert_eq!(diff.delete_count, 0);
+        assert_eq!(diff.insert_text, "世界");
+        assert_eq!(diff.common_prefix_len, 2);
+    }
+
+    #[test]
+    fn test_text_diff_replace_last() {
+        // Replace last character: "你好吗" -> "你好嘛"
+        let diff = TextDiff::compute("你好吗", "你好嘛");
+        assert_eq!(diff.delete_count, 1);
+        assert_eq!(diff.insert_text, "嘛");
+        assert_eq!(diff.common_prefix_len, 2);
+    }
+
+    #[test]
+    fn test_text_diff_no_change() {
+        // No change
+        let diff = TextDiff::compute("hello", "hello");
+        assert!(diff.is_empty());
+        assert_eq!(diff.delete_count, 0);
+        assert_eq!(diff.insert_text, "");
+    }
+
+    #[test]
+    fn test_text_diff_complete_replace() {
+        // Complete replacement
+        let diff = TextDiff::compute("abc", "xyz");
+        assert_eq!(diff.delete_count, 3);
+        assert_eq!(diff.insert_text, "xyz");
+        assert_eq!(diff.common_prefix_len, 0);
+    }
+
+    #[test]
+    fn test_text_diff_from_empty() {
+        // From empty string
+        let diff = TextDiff::compute("", "hello");
+        assert_eq!(diff.delete_count, 0);
+        assert_eq!(diff.insert_text, "hello");
+    }
+
+    #[test]
+    fn test_text_diff_to_empty() {
+        // To empty string (delete all)
+        let diff = TextDiff::compute("hello", "");
+        assert_eq!(diff.delete_count, 5);
+        assert_eq!(diff.insert_text, "");
+    }
+
+    #[test]
+    fn test_text_diff_efficiency() {
+        // Test efficiency calculation
+        // Old: "你好世界很长的一段话" (10 chars) -> New: "你好世界很长的一段话啊" (11 chars)
+        let old = "你好世界很长的一段话";
+        let new = "你好世界很长的一段话啊";
+        let diff = TextDiff::compute(old, new);
+        
+        assert_eq!(diff.delete_count, 0); // No deletion needed
+        assert_eq!(diff.insert_text, "啊"); // Just append
+        
+        let (old_ops, new_ops) = diff.efficiency_stats(10, 11);
+        assert_eq!(old_ops, 11); // 10 backspaces + 1 paste
+        assert_eq!(new_ops, 1);  // Just 1 type/paste
+        // Saved 91% of operations!
+    }
+
+    #[test]
+    fn test_text_diff_partial_change() {
+        // Partial change in middle affects suffix
+        // "今天天气很好" -> "今天天汽很好" (typo fix)
+        let diff = TextDiff::compute("今天天气很好", "今天天汽很好");
+        assert_eq!(diff.delete_count, 3); // 气很好
+        assert_eq!(diff.insert_text, "汽很好");
+        assert_eq!(diff.common_prefix_len, 3); // 今天天
+    }
 }

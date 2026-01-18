@@ -1,8 +1,15 @@
 # Raflow 详细设计文档
 
-> **版本**: 2.0.0  
+> **版本**: 2.1.0  
 > **更新日期**: 2026-01-18  
 > **基于代码版本**: 0.1.0
+
+### 变更记录
+
+| 版本 | 日期 | 变更内容 |
+|------|------|----------|
+| 2.1.0 | 2026-01-18 | 新增 TextDiff 增量更新算法，优化实时文本插入性能 |
+| 2.0.0 | 2026-01-18 | 初始版本，基于代码分析生成 |
 
 ---
 
@@ -332,6 +339,16 @@ classDiagram
         +copy_to_clipboard(text)
         +send_paste_keystroke()
         +send_backspace_keystrokes(count)
+        +send_text_keystrokes(text)
+    }
+
+    class TextDiff {
+        +delete_count: usize
+        +insert_text: String
+        +common_prefix_len: usize
+        +compute(old, new) TextDiff
+        +is_empty() bool
+        +efficiency_stats(old_len, new_len)
     }
 
     AppState --> AppSettings
@@ -339,6 +356,7 @@ classDiagram
     AppState --> ConnectionStatus
     TranscriberClient --> TranscriptEvent
     TextInserter --> ClipboardManager
+    TextInserter ..> TextDiff : uses
 ```
 
 ---
@@ -700,48 +718,101 @@ classDiagram
 
 ## 9. 实时文本插入机制
 
-### 9.1 文本插入流程
+### 9.1 增量更新算法 (TextDiff)
+
+为了提高实时文本插入的效率，系统采用**增量更新算法**，只删除和插入变化的部分，而不是全量替换。
+
+#### 算法原理
 
 ```mermaid
 flowchart TD
-    subgraph "接收转录事件"
-        E1[TranscriptEvent::Partial]
-        E2[TranscriptEvent::Committed]
+    subgraph "输入"
+        OLD["旧文本: '你好世'"]
+        NEW["新文本: '你好世界'"]
     end
 
-    subgraph "增量更新算法"
-        A[接收新文本]
-        B[计算旧文本字符数]
-        C[复制新文本到剪贴板]
-        D{在主线程执行}
-        E[发送 N 个退格键]
-        F[发送 Cmd+V 粘贴]
+    subgraph "TextDiff 计算"
+        A[比较字符序列]
+        B[找到公共前缀]
+        C["公共前缀: '你好世' (3字符)"]
+        D[计算需要删除的字符数]
+        E["删除数: 0"]
+        F[计算需要插入的文本]
+        G["插入: '界'"]
     end
 
-    subgraph "macOS 特殊处理"
-        G[enigo 必须在主线程]
-        H[run_on_main_thread]
+    subgraph "执行"
+        H{删除数 > 0?}
+        I[发送退格键]
+        J{有插入文本?}
+        K[插入/粘贴文本]
     end
+
+    OLD --> A
+    NEW --> A
+    A --> B --> C
+    C --> D --> E
+    C --> F --> G
+    E --> H
+    H -->|否| J
+    H -->|是| I --> J
+    J -->|是| K
+```
+
+#### 性能对比
+
+| 更新场景 | 旧方案 (全量替换) | 新方案 (增量更新) | 节省 |
+|----------|-------------------|-------------------|------|
+| "你" → "你好" | 1退格 + 1粘贴 | 0退格 + 1追加 | 50% |
+| "你好世界" → "你好世界啊" | 4退格 + 1粘贴 | 0退格 + 1追加 | 80% |
+| "你好吗" → "你好嘛" | 3退格 + 1粘贴 | 1退格 + 1追加 | 50% |
+| "长文本..." (10字符) → "长文本...啊" | 10退格 + 1粘贴 | 0退格 + 1追加 | **91%** |
+
+#### 代码实现
+
+```rust
+/// 计算文本差异
+pub struct TextDiff {
+    pub delete_count: usize,    // 需要删除的字符数
+    pub insert_text: String,    // 需要插入的文本
+    pub common_prefix_len: usize, // 公共前缀长度
+}
+
+impl TextDiff {
+    pub fn compute(old_text: &str, new_text: &str) -> Self {
+        let old_chars: Vec<char> = old_text.chars().collect();
+        let new_chars: Vec<char> = new_text.chars().collect();
+
+        // 找公共前缀长度
+        let common_prefix_len = old_chars.iter()
+            .zip(new_chars.iter())
+            .take_while(|(a, b)| a == b)
+            .count();
+
+        let delete_count = old_chars.len() - common_prefix_len;
+        let insert_text: String = new_chars[common_prefix_len..].iter().collect();
+
+        TextDiff { delete_count, insert_text, common_prefix_len }
+    }
+}
+```
 
     E1 --> A
     E2 --> A
     A --> B
     B --> C
-    C --> D
-    D -->|是| H
-    H --> E
+    C -->|是| SKIP[跳过]
+    C -->|否| E
     E --> F
-
-    subgraph "结果"
-        R1[文本实时出现在目标应用]
-        R2[用户可以看到逐字更新]
-    end
-
-    F --> R1
-    R1 --> R2
+    F -->|是| G
+    F -->|否| H
+    G --> I
+    H --> I
+    I --> J
+    J --> R[文本实时出现在目标应用]
 ```
 
-### 9.2 目标应用捕获
+### 9.3 目标应用捕获
 
 ```mermaid
 sequenceDiagram
@@ -764,7 +835,7 @@ sequenceDiagram
     Note over State: 保存目标应用供后续使用
 ```
 
-### 9.3 AppleScript 交互
+### 9.4 AppleScript 交互
 
 ```mermaid
 flowchart LR
@@ -1206,6 +1277,35 @@ gantt
 | 文本插入 | < 70ms |
 | **总端到端延迟** | **< 500ms** |
 
+### 16.4 文本插入优化 (TextDiff)
+
+使用增量更新算法显著减少按键操作次数：
+
+```mermaid
+graph LR
+    subgraph "旧方案"
+        A1[全量删除] --> A2[全量插入]
+        A3["操作数: N + 1"]
+    end
+
+    subgraph "新方案 TextDiff"
+        B1[计算公共前缀] --> B2[只删除差异部分]
+        B2 --> B3[只插入新增部分]
+        B4["操作数: D + 1 (D << N)"]
+    end
+```
+
+| 场景 | 旧方案操作数 | 新方案操作数 | 节省比例 |
+|------|-------------|-------------|----------|
+| 追加 1 字符 (10→11) | 11 | 1 | **91%** |
+| 追加 1 字符 (50→51) | 51 | 1 | **98%** |
+| 替换最后 1 字符 | N+1 | 2 | **(N-1)/(N+1)** |
+| 完全不同 | N+1 | N+1 | 0% |
+
+**优化策略**:
+- 短文本 (≤10 字符) 且无删除：直接键入（避免剪贴板开销）
+- 其他情况：使用剪贴板粘贴（更可靠）
+
 ---
 
 ## 17. 构建与部署
@@ -1276,20 +1376,27 @@ npm run tauri build
 | 低 | 本地 Whisper 支持 | 离线语音识别 |
 | 低 | 语音命令 | 识别特殊命令如 "删除上一句" |
 
-### 18.2 架构优化
+### 18.2 已完成优化
+
+| 优化项 | 状态 | 描述 |
+|--------|------|------|
+| ✅ TextDiff 增量更新 | 已完成 | 只删除/插入变化的部分，减少 50-98% 按键操作 |
+| ✅ 智能插入策略 | 已完成 | 短文本直接键入，长文本使用剪贴板 |
+
+### 18.3 架构优化方向
 
 ```mermaid
 graph TB
     subgraph "当前架构"
         A1[单一 WebSocket 连接]
         A2[JSON 配置文件]
-        A3[同步文本插入]
+        A3[✅ 增量文本插入]
     end
 
     subgraph "优化方向"
         B1[连接池 + 自动重连]
         B2[系统 Keychain 集成]
-        B3[异步插入队列]
+        B3[macOS Accessibility API]
         B4[本地模型支持]
     end
 

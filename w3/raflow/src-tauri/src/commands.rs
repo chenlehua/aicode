@@ -8,7 +8,7 @@ use crate::error::{AppError, Result};
 use crate::hotkey;
 use crate::input::{
     check_accessibility_permission, get_frontmost_app, request_accessibility_permission,
-    TextInserter,
+    TextDiff, TextInserter,
 };
 use crate::settings_store;
 use crate::state::{AppSettings, AppStateHandle, ConnectionStatus, RecordingState};
@@ -145,37 +145,69 @@ async fn start_recording_internal(state: &AppStateHandle, app: &AppHandle) -> Re
                         continue;
                     }
 
-                    // Real-time text insertion: replace previous partial with new one
-                    let target = state_clone.get_target_app().await;
-                    let old_len = last_partial_text.chars().count();
-                    let new_text = text.clone();
-                    last_partial_text = text;
+                    // Compute incremental diff for efficient update
+                    let diff = TextDiff::compute(&last_partial_text, &text);
+                    
+                    // Skip if no actual change needed
+                    if diff.is_empty() {
+                        last_partial_text = text;
+                        continue;
+                    }
 
+                    let old_len = last_partial_text.chars().count();
+                    let new_len = text.chars().count();
+                    let (old_ops, new_ops) = diff.efficiency_stats(old_len, new_len);
+                    
                     log::info!(
-                        "Partial update: replacing {} chars with '{}' ({} chars)",
-                        old_len,
-                        new_text,
-                        new_text.chars().count()
+                        "Partial update (diff): '{}' -> '{}' | delete {} chars, insert '{}' | efficiency: {} -> {} ops (saved {}%)",
+                        last_partial_text,
+                        text,
+                        diff.delete_count,
+                        diff.insert_text,
+                        old_ops,
+                        new_ops,
+                        if old_ops > 0 { ((old_ops - new_ops) * 100) / old_ops } else { 0 }
                     );
 
-                    // Copy text to clipboard first (can be done from any thread)
-                    if let Ok(mut inserter) = TextInserter::new() {
-                        let _ = inserter.copy_to_clipboard(&new_text);
+                    let insert_text = diff.insert_text.clone();
+                    let delete_count = diff.delete_count;
+                    last_partial_text = text;
+
+                    // For short insertions without deletion, type directly (faster)
+                    // For longer text or when deletion is needed, use clipboard
+                    let use_clipboard = delete_count > 0 || insert_text.chars().count() > 10;
+
+                    if use_clipboard && !insert_text.is_empty() {
+                        // Copy text to clipboard first (can be done from any thread)
+                        if let Ok(mut inserter) = TextInserter::new() {
+                            let _ = inserter.copy_to_clipboard(&insert_text);
+                        }
                     }
 
                     // Use main thread to send keystrokes (required for macOS accessibility)
                     let app_for_keys = app_clone.clone();
                     let _ = app_for_keys.run_on_main_thread(move || {
-                        // Delete old text with backspaces
-                        if old_len > 0 {
-                            if let Err(e) = TextInserter::send_backspace_keystrokes(old_len) {
+                        // Delete only the differing suffix with backspaces
+                        if delete_count > 0 {
+                            if let Err(e) = TextInserter::send_backspace_keystrokes(delete_count) {
                                 log::error!("Failed to send backspaces: {}", e);
                                 return;
                             }
                         }
-                        // Paste new text
-                        if let Err(e) = TextInserter::send_paste_keystroke() {
-                            log::error!("Failed to send paste keystroke: {}", e);
+                        
+                        // Insert the new text
+                        if !insert_text.is_empty() {
+                            if use_clipboard {
+                                // Paste from clipboard
+                                if let Err(e) = TextInserter::send_paste_keystroke() {
+                                    log::error!("Failed to send paste keystroke: {}", e);
+                                }
+                            } else {
+                                // Type directly (faster for short text, no deletion case)
+                                if let Err(e) = TextInserter::send_text_keystrokes(&insert_text) {
+                                    log::error!("Failed to type text: {}", e);
+                                }
+                            }
                         }
                     });
                 }
@@ -192,30 +224,53 @@ async fn start_recording_internal(state: &AppStateHandle, app: &AppHandle) -> Re
                     }
 
                     // The committed text should already be displayed from partials
-                    // Just add a space after the committed segment
-                    let target = state_clone.get_target_app().await;
-                    let old_len = last_partial_text.chars().count();
+                    // We need to replace the last partial with committed text + space
                     let committed_text = format!("{} ", text);
+                    
+                    // Compute diff: replace last partial with committed text + space
+                    let diff = TextDiff::compute(&last_partial_text, &committed_text);
+                    
+                    let old_len = last_partial_text.chars().count();
+                    let new_len = committed_text.chars().count();
+                    let (old_ops, new_ops) = diff.efficiency_stats(old_len, new_len);
+                    
+                    log::info!(
+                        "Committed update (diff): '{}' -> '{}' | delete {} chars, insert '{}' | efficiency: {} -> {} ops",
+                        last_partial_text,
+                        committed_text,
+                        diff.delete_count,
+                        diff.insert_text,
+                        old_ops,
+                        new_ops
+                    );
+
+                    let insert_text = diff.insert_text.clone();
+                    let delete_count = diff.delete_count;
                     last_partial_text.clear(); // Reset for next segment
 
-                    // Copy text to clipboard first (can be done from any thread)
-                    if let Ok(mut inserter) = TextInserter::new() {
-                        let _ = inserter.copy_to_clipboard(&committed_text);
+                    // For committed, always use clipboard for reliability
+                    if !insert_text.is_empty() {
+                        if let Ok(mut inserter) = TextInserter::new() {
+                            let _ = inserter.copy_to_clipboard(&insert_text);
+                        }
                     }
 
                     // Use main thread to send keystrokes (required for macOS accessibility)
                     let app_for_keys = app_clone.clone();
                     let _ = app_for_keys.run_on_main_thread(move || {
-                        // Delete old text with backspaces
-                        if old_len > 0 {
-                            if let Err(e) = TextInserter::send_backspace_keystrokes(old_len) {
+                        // Delete only the differing suffix with backspaces
+                        if delete_count > 0 {
+                            if let Err(e) = TextInserter::send_backspace_keystrokes(delete_count) {
                                 log::error!("Failed to send backspaces: {}", e);
                                 return;
                             }
                         }
-                        // Paste new text
-                        if let Err(e) = TextInserter::send_paste_keystroke() {
-                            log::error!("Failed to send paste keystroke: {}", e);
+                        
+                        // Insert the new text (committed text + space)
+                        if !insert_text.is_empty() {
+                            if let Err(e) = TextInserter::send_paste_keystroke() {
+                                log::error!("Failed to send paste keystroke: {}", e);
+                            }
                         }
                     });
                 }
