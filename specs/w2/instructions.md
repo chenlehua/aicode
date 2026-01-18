@@ -99,4 +99,4 @@ speckit.anlyze仔细 review ./w2/db_query代码，删除不用的代码，添加
 
 构建一个相对复杂的 mysql 数据库 interview_db， 记录公司招聘面试、安排面试结果等相关的信息，并添加足够丰富且真实的 seed data，保存到./w2/db_query/fixtures/interview_db.sql中。
 
- mysql的连接为mysql://mysql:mysql@localhost:3306/interview_db，根据 ./w2/db_query/fixtures/interview_db.sql 中的数据和./w2/db_query/fixtures/test.rest中测试用例，在 ./w2/db_query/fixtures/test-nysql.rest中添加mysql的测试用例，然后运行测试。如果后端测试 ok，那么打开后端和前端，使用 playwright 测试前端，确保MySQL db 的查询功能在前端也正常工作。
+ mysql的连接为mysql://mysql:mysql@localhost:3306/interview_db，根据 ./w2/db_query/fixtures/test_mysql.sql 中的数据和./w2/db_query/fixtures/test.rest中测试用例，在 ./w2/db_query/fixtures/test-mysql.rest中添加mysql的测试用例，然后运行测试。如果后端测试 ok，那么打开后端和前端，使用 playwright 测试前端，确保MySQL db 的查询功能在前端也正常工作。

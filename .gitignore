@@ -173,3 +173,9 @@ w1/project-alpha/frontend/build/
 
 .cursor/
 .specify/
+
+# Tauri/Rust (w3/raflow)
+w3/raflow/src-tauri/target/
+w3/raflow/src-tauri/gen/schemas/
+w3/raflow/node_modules/
+w3/raflow/dist/
