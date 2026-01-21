@@ -60,8 +60,8 @@ genslides/
 │   │   ├── test_style.py
 │   │   └── test_images.py
 │   │
-│   ├── requirements.txt              # Python 依赖
-│   └── pyproject.toml
+│   ├── pyproject.toml                # 项目配置和依赖（uv 管理）
+│   └── uv.lock                       # uv 锁定文件
 │
 ├── frontend/                         # 前端 TypeScript 代码
 │   ├── src/
@@ -840,8 +840,13 @@ interface PlayerState {
 ```python
 # services/gemini_service.py
 from google import genai
-from typing import List
-import base64
+from google.genai import types
+from typing import List, Optional
+from PIL import Image
+import io
+
+# 使用 gemini-3-pro-image-preview 模型进行图片生成
+IMAGE_MODEL = "gemini-3-pro-image-preview"
 
 class GeminiService:
     def __init__(self, api_key: str):
@@ -853,16 +858,51 @@ class GeminiService:
         count: int = 2
     ) -> List[bytes]:
         """根据 prompt 生成风格候选图片"""
-        pass
+        images = []
+        for _ in range(count):
+            response = self.client.models.generate_content(
+                model=IMAGE_MODEL,
+                contents=[prompt],
+            )
+            for part in response.parts:
+                if part.inline_data is not None:
+                    image = part.as_image()
+                    # 转换为 bytes
+                    buffer = io.BytesIO()
+                    image.save(buffer, format="JPEG")
+                    images.append(buffer.getvalue())
+        return images
 
     async def generate_slide_image(
         self,
         content: str,
         style_image: bytes,
         style_prompt: str
-    ) -> bytes:
+    ) -> Optional[bytes]:
         """根据内容和风格参考生成 slide 图片"""
-        pass
+        # 构建带有风格参考图片的提示
+        style_pil_image = Image.open(io.BytesIO(style_image))
+
+        full_prompt = f"""
+        请根据以下内容生成一张幻灯片图片。
+        风格要求: {style_prompt}
+        幻灯片内容: {content}
+        参考下面的风格图片，保持一致的视觉风格。
+        """
+
+        response = self.client.models.generate_content(
+            model=IMAGE_MODEL,
+            contents=[full_prompt, style_pil_image],
+        )
+
+        for part in response.parts:
+            if part.inline_data is not None:
+                image = part.as_image()
+                buffer = io.BytesIO()
+                image.save(buffer, format="JPEG")
+                return buffer.getvalue()
+
+        return None
 ```
 
 ### 8.2 Blake3 Hash 工具
@@ -969,3 +1009,122 @@ class Settings(BaseSettings):
 2. **路径安全**: 防止路径遍历攻击，slug 和 sid 只允许安全字符
 3. **CORS**: 仅允许配置的源访问 API
 4. **API Key 保护**: Gemini API Key 仅在后端使用，不暴露给前端
+
+## 12. 依赖管理（uv）
+
+项目使用 [uv](https://github.com/astral-sh/uv) 进行 Python 依赖管理。
+
+### 12.1 后端 pyproject.toml
+
+```toml
+# backend/pyproject.toml
+[project]
+name = "genslides-backend"
+version = "0.1.0"
+description = "GenSlides Backend API"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.34.0",
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.7.0",
+    "python-multipart>=0.0.20",
+    "pyyaml>=6.0.2",
+    "blake3>=1.0.0",
+    "google-genai>=1.0.0",
+    "pillow>=11.1.0",
+    "websockets>=14.1",
+    "httpx>=0.28.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.25.0",
+    "pytest-cov>=6.0.0",
+    "ruff>=0.9.0",
+    "mypy>=1.14.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+```
+
+### 12.2 常用 uv 命令
+
+```bash
+# 初始化项目（在 backend 目录下）
+cd backend
+uv init
+
+# 安装所有依赖
+uv sync
+
+# 安装包含开发依赖
+uv sync --all-extras
+
+# 添加新依赖
+uv add fastapi
+uv add --dev pytest
+
+# 移除依赖
+uv remove <package>
+
+# 更新所有依赖到最新版本
+uv lock --upgrade
+
+# 更新特定依赖
+uv lock --upgrade-package fastapi
+
+# 运行 Python 脚本
+uv run python app/main.py
+
+# 运行 FastAPI 开发服务器
+uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 3003
+
+# 运行测试
+uv run pytest
+
+# 运行测试并生成覆盖率报告
+uv run pytest --cov=app --cov-report=html
+
+# 运行代码检查
+uv run ruff check .
+uv run ruff format .
+
+# 运行类型检查
+uv run mypy app/
+```
+
+### 12.3 开发环境设置
+
+```bash
+# 1. 克隆项目后进入后端目录
+cd genslides/backend
+
+# 2. 使用 uv 同步依赖（自动创建虚拟环境）
+uv sync --all-extras
+
+# 3. 复制环境变量配置
+cp ../.env.example ../.env
+
+# 4. 启动开发服务器
+uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 3003
+```
+
