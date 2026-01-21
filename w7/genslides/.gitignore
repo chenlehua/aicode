@@ -38,5 +38,12 @@ htmlcov/
 *.egg-info/
 build/
 
-# Slides data (optional - uncomment if you want to track slides)
-# slides/
+# Slides data (generated images)
+backend/slides/
+
+# Logs
+*.log
+
+# Lock files (optional - keep if you want reproducible builds)
+# backend/uv.lock
+# frontend/package-lock.json
