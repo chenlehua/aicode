@@ -2,7 +2,7 @@
  * Fullscreen player component for presentations
  */
 
-import { useEffect, useCallback } from "react";
+import { useEffect } from "react";
 import { usePlayerStore, useSlidesStore } from "@/stores";
 import { cn } from "@/utils";
 
@@ -11,48 +11,18 @@ export function FullscreenPlayer(): JSX.Element | null {
     usePlayerStore();
   const { slides, displayedImageHash } = useSlidesStore();
 
-  // Handle keyboard navigation
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent) => {
-      switch (event.key) {
-        case "Escape":
-          exitFullscreen();
-          break;
-        case "ArrowRight":
-        case " ":
-          event.preventDefault();
-          if (currentIndex < slides.length - 1) {
-            next();
-          }
-          break;
-        case "ArrowLeft":
-          event.preventDefault();
-          prev();
-          break;
-        case "p":
-          event.preventDefault();
-          if (isPlaying) {
-            pause();
-          } else {
-            play();
-          }
-          break;
-      }
-    },
-    [currentIndex, slides.length, next, prev, exitFullscreen, isPlaying, pause, play]
-  );
+  // Note: Keyboard navigation is handled by useKeyboard hook in ProjectEditor
+  // to avoid duplicate event handlers
 
   useEffect(() => {
     if (isFullscreen) {
-      document.addEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "hidden";
     }
 
     return () => {
-      document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "";
     };
-  }, [isFullscreen, handleKeyDown]);
+  }, [isFullscreen]);
 
   // Auto-advance when playing
   useEffect(() => {

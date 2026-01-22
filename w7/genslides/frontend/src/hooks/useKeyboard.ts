@@ -14,7 +14,7 @@ export function useKeyboard(options: KeyboardOptions = {}) {
   const { enabled = true, onCreateSlide } = options;
 
   const { slides, selectedSid, selectSlide } = useSlidesStore();
-  const { isFullscreen, isPlaying, next, prev, exitFullscreen, pause, play } =
+  const { isFullscreen, isPlaying, currentIndex, next, prev, exitFullscreen, pause, play } =
     usePlayerStore();
 
   const handleKeyDown = useCallback(
@@ -38,7 +38,10 @@ export function useKeyboard(options: KeyboardOptions = {}) {
           case "ArrowRight":
           case " ":
             event.preventDefault();
-            next();
+            // Check boundary before advancing
+            if (currentIndex < slides.length - 1) {
+              next();
+            }
             break;
           case "ArrowLeft":
             event.preventDefault();
@@ -57,22 +60,22 @@ export function useKeyboard(options: KeyboardOptions = {}) {
       }
 
       // Editor controls
-      const currentIndex = slides.findIndex((s) => s.sid === selectedSid);
+      const selectedIndex = slides.findIndex((s) => s.sid === selectedSid);
 
       switch (event.key) {
         case "ArrowUp":
           if (event.metaKey || event.ctrlKey) {
             event.preventDefault();
-            if (currentIndex > 0) {
-              selectSlide(slides[currentIndex - 1]!.sid);
+            if (selectedIndex > 0) {
+              selectSlide(slides[selectedIndex - 1]!.sid);
             }
           }
           break;
         case "ArrowDown":
           if (event.metaKey || event.ctrlKey) {
             event.preventDefault();
-            if (currentIndex < slides.length - 1) {
-              selectSlide(slides[currentIndex + 1]!.sid);
+            if (selectedIndex < slides.length - 1) {
+              selectSlide(slides[selectedIndex + 1]!.sid);
             }
           }
           break;
@@ -89,6 +92,7 @@ export function useKeyboard(options: KeyboardOptions = {}) {
     [
       isFullscreen,
       isPlaying,
+      currentIndex,
       slides,
       selectedSid,
       selectSlide,
