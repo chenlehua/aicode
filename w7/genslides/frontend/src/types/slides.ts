@@ -41,5 +41,14 @@ export interface Project {
   cost: CostInfo;
 }
 
+export interface ProjectSummary {
+  slug: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+  slide_count: number;
+  has_style: boolean;
+}
+
 // Re-export Style from style.ts
 export type { Style } from "./style";

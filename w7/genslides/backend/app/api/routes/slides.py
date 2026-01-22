@@ -9,8 +9,11 @@ from app.api.dependencies import get_cost_service, get_slides_service
 from app.api.schemas import (
     CostResponse,
     CreateSlideRequest,
+    DeleteProjectResponse,
     DeleteSlideResponse,
+    ProjectListResponse,
     ProjectResponse,
+    ProjectSummaryResponse,
     ReorderSlidesRequest,
     ReorderSlidesResponse,
     SlideImageResponse,
@@ -60,6 +63,27 @@ def _slide_to_response(slide: Slide, slug: str) -> SlideResponse:
     )
 
 
+@router.get("", response_model=ProjectListResponse)
+async def list_projects(
+    service: Annotated[SlidesService, Depends(get_slides_service)],
+) -> ProjectListResponse:
+    """List all existing projects."""
+    projects = await service.list_projects()
+    return ProjectListResponse(
+        projects=[
+            ProjectSummaryResponse(
+                slug=p.slug,
+                title=p.title,
+                created_at=p.created_at.isoformat(),
+                updated_at=p.updated_at.isoformat(),
+                slide_count=len(p.slides),
+                has_style=p.style is not None,
+            )
+            for p in projects
+        ]
+    )
+
+
 @router.get("/{slug}", response_model=ProjectResponse)
 async def get_project(
     slug: str,
@@ -92,6 +116,16 @@ async def get_project(
             breakdown=cost_service.get_breakdown(project.cost),
         ),
     )
+
+
+@router.delete("/{slug}", response_model=DeleteProjectResponse)
+async def delete_project(
+    slug: str,
+    service: Annotated[SlidesService, Depends(get_slides_service)],
+) -> DeleteProjectResponse:
+    """Delete a project and all its files."""
+    await service.delete_project(slug)
+    return DeleteProjectResponse(success=True, deleted_slug=slug)
 
 
 @router.put("/{slug}/title", response_model=UpdateTitleResponse)

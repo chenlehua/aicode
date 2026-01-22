@@ -2,155 +2,74 @@
  * Root application component
  */
 
-import { useCallback, useMemo } from "react";
-import { Header } from "@/components/Header";
-import { Sidebar } from "@/components/Sidebar";
-import { Preview } from "@/components/Preview";
-import { FullscreenPlayer } from "@/components/Player";
-import { StyleSetupModal, StyleSettingsModal } from "@/components/Modals";
-import { ToastContainer, Loading, ErrorBoundary } from "@/components/common";
-import { useSlides, useStyle, useWebSocket, useKeyboard, useImages } from "@/hooks";
+import { useState, useCallback, useMemo, useEffect } from "react";
+import { HomePage } from "@/components/HomePage";
+import { ProjectEditor } from "./ProjectEditor";
 
-// Get slug from URL or use default
-function getSlugFromUrl(): string {
+// Parse URL to get slug
+function getSlugFromUrl(): string | null {
   const path = window.location.pathname;
-  const match = path.match(/^\/slides\/([a-zA-Z0-9_-]+)/);
+
+  // Check for /<slug> pattern (not /slides/<slug>)
+  const match = path.match(/^\/([a-zA-Z0-9_-]+)$/);
   if (match?.[1]) {
     return match[1];
   }
-  // Default slug
-  return "demo";
+
+  // Also support legacy /slides/<slug> pattern
+  const legacyMatch = path.match(/^\/slides\/([a-zA-Z0-9_-]+)/);
+  if (legacyMatch?.[1]) {
+    return legacyMatch[1];
+  }
+
+  return null;
 }
 
 export function App(): JSX.Element {
-  const slug = useMemo(() => getSlugFromUrl(), []);
+  // Get initial slug from URL
+  const initialSlug = useMemo(() => getSlugFromUrl(), []);
+  const [currentSlug, setCurrentSlug] = useState<string | null>(initialSlug);
+  // Pending title for newly created projects
+  const [pendingTitle, setPendingTitle] = useState<string | null>(null);
 
-  // Initialize hooks
-  const {
-    slides,
-    selectedSid,
-    isLoading,
-    error,
-    selectSlide,
-    updateTitle,
-    createSlide,
-    updateSlideContent,
-    deleteSlide,
-    reorderSlides,
-  } = useSlides(slug);
+  // Handle project selection
+  const handleSelectProject = useCallback((slug: string, title?: string) => {
+    // Update URL without reload
+    window.history.pushState({}, "", `/${slug}`);
+    setCurrentSlug(slug);
+    // Set pending title if this is a new project
+    setPendingTitle(title || null);
+  }, []);
 
-  const { generateCandidates, saveStyle } = useStyle(slug);
-  const { generateImage } = useImages(slug);
+  // Handle back to home
+  const handleBackToHome = useCallback(() => {
+    window.history.pushState({}, "", "/");
+    setCurrentSlug(null);
+    setPendingTitle(null);
+  }, []);
 
-  // WebSocket connection for real-time updates
-  useWebSocket(slug);
+  // Listen for browser back/forward navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentSlug(getSlugFromUrl());
+      setPendingTitle(null);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
-  // Handlers
-  const handleAddSlide = useCallback(async (afterSid?: string) => {
-    await createSlide("New slide content", afterSid || selectedSid || undefined);
-  }, [createSlide, selectedSid]);
-
-  // Keyboard shortcuts - pass handleAddSlide for Enter key
-  useKeyboard({ onCreateSlide: handleAddSlide });
-
-  const handleContentChange = useCallback(
-    (sid: string, content: string) => {
-      updateSlideContent(sid, content);
-    },
-    [updateSlideContent]
-  );
-
-  const handleGenerate = useCallback(
-    (sid: string) => {
-      generateImage(sid);
-    },
-    [generateImage]
-  );
-
-  const handleGenerateCandidates = useCallback(
-    async (prompt: string) => {
-      await generateCandidates(prompt);
-    },
-    [generateCandidates]
-  );
-
-  const handleSaveStyle = useCallback(
-    async (candidateId: string) => {
-      await saveStyle(candidateId);
-    },
-    [saveStyle]
-  );
-
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="md-shell flex h-screen items-center justify-center">
-        <Loading size="lg" text="Loading project..." />
-      </div>
-    );
+  // Show HomePage if no slug selected
+  if (!currentSlug) {
+    return <HomePage onSelectProject={handleSelectProject} />;
   }
 
-  // Error state
-  if (error) {
-    return (
-      <div className="md-shell flex h-screen items-center justify-center">
-        <div className="text-center">
-          <h1 className="mb-4 text-2xl font-bold text-[var(--md-watermelon)]">
-            Error Loading Project
-          </h1>
-          <p className="text-[var(--md-slate)]">{error}</p>
-        </div>
-      </div>
-    );
-  }
-
+  // Show ProjectEditor for selected project
   return (
-    <ErrorBoundary>
-      <div className="md-shell flex h-screen flex-col">
-        {/* Header */}
-        <Header onTitleChange={updateTitle} />
-
-        {/* Main content */}
-        <div className="flex flex-1 overflow-hidden">
-          {/* Sidebar */}
-          <ErrorBoundary>
-            <Sidebar
-              slides={slides}
-              selectedSid={selectedSid}
-              onSelect={selectSlide}
-              onDelete={deleteSlide}
-              onAddSlide={handleAddSlide}
-              onContentChange={handleContentChange}
-              onReorder={reorderSlides}
-            />
-          </ErrorBoundary>
-
-          {/* Preview area */}
-          <main className="flex-1 overflow-hidden">
-            <ErrorBoundary>
-              <Preview onGenerate={handleGenerate} />
-            </ErrorBoundary>
-          </main>
-        </div>
-
-        {/* Fullscreen player */}
-        <FullscreenPlayer />
-
-        {/* Modals */}
-        <StyleSetupModal
-          slug={slug}
-          onGenerateCandidates={handleGenerateCandidates}
-          onSaveStyle={handleSaveStyle}
-        />
-        <StyleSettingsModal
-          slug={slug}
-          onGenerateCandidates={handleGenerateCandidates}
-          onSaveStyle={handleSaveStyle}
-        />
-
-        {/* Toast notifications */}
-        <ToastContainer />
-      </div>
-    </ErrorBoundary>
+    <ProjectEditor
+      slug={currentSlug}
+      pendingTitle={pendingTitle}
+      onBackToHome={handleBackToHome}
+      onTitleApplied={() => setPendingTitle(null)}
+    />
   );
 }

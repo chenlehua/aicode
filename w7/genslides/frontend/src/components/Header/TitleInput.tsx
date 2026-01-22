@@ -2,7 +2,7 @@
  * Editable title input component
  */
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useDebounce } from "@/hooks";
 import { cn } from "@/utils";
 
@@ -15,22 +15,32 @@ export function TitleInput({ title, onTitleChange }: TitleInputProps): JSX.Eleme
   const [value, setValue] = useState(title);
   const [isEditing, setIsEditing] = useState(false);
   const debouncedValue = useDebounce(value, 500);
+  // Track if user has actually edited the input
+  const userEditedRef = useRef(false);
 
-  // Sync with prop
+  // Sync with prop (external title changes)
   useEffect(() => {
     setValue(title);
+    // Reset user edited flag when title is externally updated
+    userEditedRef.current = false;
   }, [title]);
 
-  // Save on debounced change
+  // Handle user input
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    userEditedRef.current = true;
+    setValue(e.target.value);
+  }, []);
+
+  // Save on debounced change - only if user actually edited
   useEffect(() => {
-    if (debouncedValue !== title && debouncedValue.trim()) {
+    if (userEditedRef.current && debouncedValue !== title && debouncedValue.trim()) {
       onTitleChange(debouncedValue);
     }
   }, [debouncedValue, title, onTitleChange]);
 
   const handleBlur = useCallback(() => {
     setIsEditing(false);
-    if (value.trim() && value !== title) {
+    if (userEditedRef.current && value.trim() && value !== title) {
       onTitleChange(value);
     }
   }, [value, title, onTitleChange]);
@@ -39,7 +49,7 @@ export function TitleInput({ title, onTitleChange }: TitleInputProps): JSX.Eleme
     <input
       type="text"
       value={value}
-      onChange={(e) => setValue(e.target.value)}
+      onChange={handleChange}
       onFocus={() => setIsEditing(true)}
       onBlur={handleBlur}
       className={cn(

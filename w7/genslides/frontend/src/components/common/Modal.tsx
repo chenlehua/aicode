@@ -13,6 +13,7 @@ interface ModalProps {
   children: ReactNode;
   className?: string;
   showCloseButton?: boolean;
+  size?: "sm" | "md" | "lg" | "xl";
 }
 
 export function Modal({
@@ -22,6 +23,7 @@ export function Modal({
   children,
   className,
   showCloseButton = true,
+  size = "md",
 }: ModalProps): JSX.Element | null {
   // Handle escape key
   const handleEscape = useCallback(
@@ -59,8 +61,12 @@ export function Modal({
       {/* Modal content */}
       <div
         className={cn(
-          "md-card relative z-10 max-h-[90vh] w-full max-w-lg overflow-auto",
+          "md-card relative z-10 max-h-[90vh] w-full overflow-auto",
           "animate-in fade-in zoom-in-95 duration-200",
+          size === "sm" && "max-w-sm",
+          size === "md" && "max-w-lg",
+          size === "lg" && "max-w-2xl",
+          size === "xl" && "max-w-4xl",
           className
         )}
         role="dialog"

@@ -6,7 +6,7 @@ import { cn } from "@/utils";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "ghost";
+  variant?: "primary" | "secondary" | "ghost" | "danger";
   size?: "sm" | "md" | "lg";
   children: ReactNode;
   isLoading?: boolean;
@@ -34,6 +34,7 @@ export function Button({
         variant === "primary" && "bg-[var(--md-sky)] hover:bg-[var(--md-sky-strong)]",
         variant === "secondary" && "md-btn-secondary bg-[var(--md-cream)]",
         variant === "ghost" && "border-transparent bg-transparent hover:bg-[var(--md-fog)]",
+        variant === "danger" && "bg-[var(--md-watermelon)] text-white hover:bg-[var(--md-watermelon-strong,#d32f2f)]",
         // States
         (disabled || isLoading) && "cursor-not-allowed opacity-50",
         className

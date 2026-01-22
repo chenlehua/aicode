@@ -100,3 +100,27 @@ class DeleteSlideResponse(BaseModel):
 
     success: bool
     deleted_sid: str
+
+
+class DeleteProjectResponse(BaseModel):
+    """Response schema for project delete operation."""
+
+    success: bool
+    deleted_slug: str
+
+
+class ProjectSummaryResponse(BaseModel):
+    """Response schema for project summary in list."""
+
+    slug: str
+    title: str
+    created_at: str
+    updated_at: str
+    slide_count: int
+    has_style: bool
+
+
+class ProjectListResponse(BaseModel):
+    """Response schema for project list."""
+
+    projects: list[ProjectSummaryResponse]

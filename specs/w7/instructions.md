@@ -80,7 +80,7 @@ for part in response.parts:
 
 ## 页面风格
 
-使用浅黄色/红褐色的水彩画风格，走可爱卡通路线，主要角色是一只黄色的可爱的鸭子，类似motherduck的风格
+
 
 目前前端界面有很大的问题：
 1. 界面很粗糙，没有美感
@@ -99,9 +99,36 @@ for part in response.parts:
 
 
 
+请仔细阅读./w7/genslides/frontend下代码，以及./specs/w7/0002-design-spec.md中的设计稿，优化如下功能：
+ 1.首次进入http://localhost:5173/后，提示新建项目或者选择已有项目。
+ 2.也可直接访问http://localhost:5173/<slug>，<slug>为项目名称，如http://localhost:5173/my-project。
+
+
+
+1.现在按回车会直接新建slide，而不是用户点击某个 slide 后设定锚点，按回车键在该 slide 下方创建新的 slide，请修复
+2.Logo和工具名称叛变的 项目名称和新建项目时保持一致，url路径中<slug>应该根据项目名称生成唯一字符串
+
+
+
+## 生成图片提示词 
+
+使用浅黄色/红褐色的水彩画风格，走可爱卡通路线，主要角色是一只黄色的可爱的鸭子，类似motherduck的风格
+
+Gen slide 介绍
+
+标题： Gen slide 介绍
+要求： 文字显眼，水平/垂直都居中
+
 根据项目代码分别生成 ascii chart:
 1.前端架构
 2.后端架构
 3.数据流图
 4.前端技术栈
 5.后端技术栈
+
+保存到./specs/w7/0003-ascii-chart.md文件中
+
+前端架构：
+
+
+标题：前端架构

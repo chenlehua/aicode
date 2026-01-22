@@ -4,8 +4,11 @@ from .images import GenerateImageRequest, GenerateTaskResponse, GetImagesRespons
 from .slides import (
     CostResponse,
     CreateSlideRequest,
+    DeleteProjectResponse,
     DeleteSlideResponse,
+    ProjectListResponse,
     ProjectResponse,
+    ProjectSummaryResponse,
     ReorderSlidesRequest,
     ReorderSlidesResponse,
     SlideImageResponse,
@@ -28,8 +31,11 @@ __all__ = [
     # Slides
     "CostResponse",
     "CreateSlideRequest",
+    "DeleteProjectResponse",
     "DeleteSlideResponse",
+    "ProjectListResponse",
     "ProjectResponse",
+    "ProjectSummaryResponse",
     "ReorderSlidesRequest",
     "ReorderSlidesResponse",
     "SlideImageResponse",

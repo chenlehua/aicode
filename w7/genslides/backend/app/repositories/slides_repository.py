@@ -77,6 +77,41 @@ class SlidesRepository:
             project = await self.create_project(slug)
         return project
 
+    async def list_projects(self) -> list[Project]:
+        """List all existing projects."""
+        projects = []
+        if not self.base_path.exists():
+            return projects
+
+        for project_dir in self.base_path.iterdir():
+            if project_dir.is_dir():
+                outline_path = project_dir / "outline.yml"
+                if outline_path.exists():
+                    project = await self.get_project(project_dir.name)
+                    if project:
+                        projects.append(project)
+
+        # Sort by updated_at descending (most recent first)
+        projects.sort(key=lambda p: p.updated_at, reverse=True)
+        return projects
+
+    async def delete_project(self, slug: str) -> bool:
+        """Delete a project and all its files."""
+        import shutil
+
+        project_path = self._get_project_path(slug)
+        if not project_path.exists():
+            return False
+
+        async with self._get_lock(slug):
+            # Remove the entire project directory
+            shutil.rmtree(project_path)
+            # Clean up the lock
+            if slug in self._locks:
+                del self._locks[slug]
+
+        return True
+
     def generate_sid(self) -> str:
         """Generate a unique slide ID."""
         return f"slide-{uuid.uuid4().hex[:8]}"

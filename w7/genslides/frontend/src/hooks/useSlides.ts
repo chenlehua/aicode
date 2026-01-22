@@ -2,13 +2,13 @@
  * Hook for slides data fetching and management
  */
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { slidesApi } from "@/api";
 import { useSlidesStore, useUIStore } from "@/stores";
 import { useStyleStore } from "@/stores";
 import { logger } from "@/utils";
 
-export function useSlides(slug: string) {
+export function useSlides(slug: string, initialTitle?: string | null) {
   const {
     slides,
     title,
@@ -28,6 +28,11 @@ export function useSlides(slug: string) {
   const { setStyle, openSetupModal } = useStyleStore();
   const { addToast } = useUIStore();
 
+  // Use ref to track initialTitle without adding to effect dependencies
+  const initialTitleRef = useRef(initialTitle);
+  initialTitleRef.current = initialTitle;
+  const titleAppliedRef = useRef(false);
+
   // Fetch project on mount
   useEffect(() => {
     const fetchProject = async () => {
@@ -37,7 +42,23 @@ export function useSlides(slug: string) {
       try {
         const project = await slidesApi.getProject(slug);
         setSlug(slug);
-        setTitle(project.title);
+
+        // Check if we should apply initial title
+        const pendingTitle = initialTitleRef.current;
+        if (pendingTitle && project.title === "Untitled" && !titleAppliedRef.current) {
+          titleAppliedRef.current = true;
+          // Update title on server
+          try {
+            await slidesApi.updateTitle(slug, pendingTitle);
+            setTitle(pendingTitle);
+          } catch (err) {
+            logger.error("Failed to apply initial title:", err);
+            setTitle(project.title);
+          }
+        } else {
+          setTitle(project.title);
+        }
+
         setSlides(project.slides);
         setCost(project.cost);
         setStyle(project.style);

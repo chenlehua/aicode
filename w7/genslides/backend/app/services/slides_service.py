@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from app.exceptions import InvalidRequestError, SlideNotFoundError
+from app.exceptions import InvalidRequestError, ProjectNotFoundError, SlideNotFoundError
 from app.models import Project, Slide
 from app.repositories import SlidesRepository
 from app.utils import compute_content_hash, is_safe_name
@@ -14,11 +14,24 @@ class SlidesService:
     def __init__(self, repository: SlidesRepository):
         self.repository = repository
 
+    async def list_projects(self) -> list[Project]:
+        """List all existing projects."""
+        return await self.repository.list_projects()
+
     async def get_project(self, slug: str) -> Project:
         """Get a project by slug, creating it if it doesn't exist."""
         if not is_safe_name(slug):
             raise InvalidRequestError(f"Invalid project slug: {slug}")
         return await self.repository.get_or_create_project(slug)
+
+    async def delete_project(self, slug: str) -> None:
+        """Delete a project and all its files."""
+        if not is_safe_name(slug):
+            raise InvalidRequestError(f"Invalid project slug: {slug}")
+
+        deleted = await self.repository.delete_project(slug)
+        if not deleted:
+            raise ProjectNotFoundError(slug)
 
     async def update_title(self, slug: str, title: str) -> Project:
         """Update project title."""

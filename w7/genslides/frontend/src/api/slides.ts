@@ -2,7 +2,7 @@
  * Slides API client
  */
 
-import type { Project, Slide, CostInfo } from "@/types";
+import type { Project, Slide, CostInfo, ProjectSummary } from "@/types";
 import { api } from "./client";
 
 export interface UpdateTitleResponse {
@@ -34,12 +34,35 @@ export interface DeleteSlideResponse {
   deleted_sid: string;
 }
 
+export interface ProjectListResponse {
+  projects: ProjectSummary[];
+}
+
+export interface DeleteProjectResponse {
+  success: boolean;
+  deleted_slug: string;
+}
+
 export const slidesApi = {
+  /**
+   * List all projects
+   */
+  listProjects(): Promise<ProjectListResponse> {
+    return api.get<ProjectListResponse>("/slides");
+  },
+
   /**
    * Get project information
    */
   getProject(slug: string): Promise<Project> {
     return api.get<Project>(`/slides/${slug}`);
+  },
+
+  /**
+   * Delete a project
+   */
+  deleteProject(slug: string): Promise<DeleteProjectResponse> {
+    return api.delete<DeleteProjectResponse>(`/slides/${slug}`);
   },
 
   /**

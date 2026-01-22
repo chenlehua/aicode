@@ -78,9 +78,10 @@ export function useKeyboard(options: KeyboardOptions = {}) {
           break;
         case "Enter":
           // Create new slide after selected slide when Enter is pressed
-          if (onCreateSlide) {
+          // Only trigger if a slide is actually selected (user clicked on it)
+          if (onCreateSlide && selectedSid) {
             event.preventDefault();
-            onCreateSlide(selectedSid || undefined);
+            onCreateSlide(selectedSid);
           }
           break;
       }

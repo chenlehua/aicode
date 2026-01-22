@@ -11,9 +11,10 @@ import { useSlidesStore, useStyleStore, usePlayerStore } from "@/stores";
 
 interface HeaderProps {
   onTitleChange: (title: string) => void;
+  onBackToHome?: () => void;
 }
 
-export function Header({ onTitleChange }: HeaderProps): JSX.Element {
+export function Header({ onTitleChange, onBackToHome }: HeaderProps): JSX.Element {
   const { title, slides, cost } = useSlidesStore();
   const { style, openSettingsModal, openSetupModal } = useStyleStore();
   const { play } = usePlayerStore();
@@ -37,7 +38,17 @@ export function Header({ onTitleChange }: HeaderProps): JSX.Element {
   return (
     <header className="md-eyebrow">
       <div className="flex items-center gap-6">
-        <Logo />
+        {onBackToHome ? (
+          <button
+            onClick={onBackToHome}
+            className="transition-opacity hover:opacity-70"
+            title="Back to projects"
+          >
+            <Logo />
+          </button>
+        ) : (
+          <Logo />
+        )}
         <div className="h-6 w-px bg-[var(--md-graphite)]" />
         <TitleInput title={title} onTitleChange={onTitleChange} />
         <StyleBadge style={style} onClick={handleStyleClick} />
