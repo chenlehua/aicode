@@ -10,6 +10,7 @@ import { logger } from "@/utils";
 export function useImages(slug: string) {
   const { addToast, addGeneratingSlide, removeGeneratingSlide, isSlideGenerating } =
     useUIStore();
+  const { deleteSlideImage } = useSlidesStore();
 
   // Generate image for a slide
   const generateImage = useCallback(
@@ -50,9 +51,31 @@ export function useImages(slug: string) {
     [slug]
   );
 
+  // Delete an image from a slide
+  const deleteImage = useCallback(
+    async (sid: string, imageHash: string) => {
+      try {
+        await imagesApi.deleteImage(slug, sid, imageHash);
+        deleteSlideImage(sid, imageHash);
+        addToast({
+          type: "success",
+          message: "Image deleted",
+        });
+      } catch (err) {
+        addToast({
+          type: "error",
+          message: "Failed to delete image",
+        });
+        logger.error("Failed to delete image:", err);
+      }
+    },
+    [slug, deleteSlideImage, addToast]
+  );
+
   return {
     generateImage,
     getImages,
+    deleteImage,
     isSlideGenerating,
   };
 }

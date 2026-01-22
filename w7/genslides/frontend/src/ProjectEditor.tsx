@@ -47,7 +47,7 @@ export function ProjectEditor({
   }, [pendingTitle, title, onTitleApplied]);
 
   const { generateCandidates, saveStyle } = useStyle(slug);
-  const { generateImage } = useImages(slug);
+  const { generateImage, deleteImage } = useImages(slug);
 
   // WebSocket connection for real-time updates
   useWebSocket(slug);
@@ -74,6 +74,13 @@ export function ProjectEditor({
       generateImage(sid);
     },
     [generateImage]
+  );
+
+  const handleDeleteImage = useCallback(
+    (sid: string, imageHash: string) => {
+      deleteImage(sid, imageHash);
+    },
+    [deleteImage]
   );
 
   const handleGenerateCandidates = useCallback(
@@ -143,7 +150,7 @@ export function ProjectEditor({
           {/* Preview area */}
           <main className="flex-1 overflow-hidden">
             <ErrorBoundary>
-              <Preview onGenerate={handleGenerate} />
+              <Preview onGenerate={handleGenerate} onDeleteImage={handleDeleteImage} />
             </ErrorBoundary>
           </main>
         </div>

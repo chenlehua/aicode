@@ -9,6 +9,7 @@ interface ThumbnailListProps {
   images: SlideImage[];
   currentHash: string | null;
   onSelect: (hash: string) => void;
+  onDelete?: (hash: string) => void;
   needsGeneration?: boolean;
   isGenerating?: boolean;
   onGenerate?: () => void;
@@ -19,6 +20,7 @@ export function ThumbnailList({
   images,
   currentHash,
   onSelect,
+  onDelete,
   needsGeneration = false,
   isGenerating = false,
   onGenerate,
@@ -31,24 +33,51 @@ export function ThumbnailList({
     <div className="flex items-center justify-center gap-2 rounded-lg border-2 border-[var(--md-graphite)] bg-[var(--md-cloud)] p-2 shadow-[4px_4px_0_0_rgba(0,0,0,1)]">
       {/* Existing image thumbnails */}
       {images.map((image, index) => (
-        <button
-          key={image.hash}
-          onClick={() => onSelect(image.hash)}
-          className={cn(
-            "relative h-12 w-20 flex-shrink-0 overflow-hidden border-2 transition-all",
-            "hover:border-[var(--md-sky)] hover:scale-105",
-            currentHash === image.hash
-              ? "border-[var(--md-sky-strong)] ring-2 ring-[var(--md-sky)]"
-              : "border-[var(--md-graphite)]"
+        <div key={image.hash} className="group relative">
+          <button
+            onClick={() => onSelect(image.hash)}
+            className={cn(
+              "relative h-12 w-20 flex-shrink-0 overflow-hidden border-2 transition-all",
+              "hover:border-[var(--md-sky)] hover:scale-105",
+              currentHash === image.hash
+                ? "border-[var(--md-sky-strong)] ring-2 ring-[var(--md-sky)]"
+                : "border-[var(--md-graphite)]"
+            )}
+            title={`Image ${index + 1}${image.matched ? " (matches current text)" : " (outdated)"}`}
+          >
+            <img
+              src={image.thumbnail_url || image.url}
+              alt={`Version ${index + 1}`}
+              className="h-full w-full object-cover"
+            />
+          </button>
+          {/* Delete button - shown on hover */}
+          {onDelete && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(image.hash);
+              }}
+              className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--md-watermelon)] text-white opacity-0 transition-opacity hover:bg-red-600 group-hover:opacity-100"
+              title="Delete image"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="10"
+                height="10"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
           )}
-          title={`Image ${index + 1}${image.matched ? " (matches current text)" : " (outdated)"}`}
-        >
-          <img
-            src={image.thumbnail_url || image.url}
-            alt={`Version ${index + 1}`}
-            className="h-full w-full object-cover"
-          />
-        </button>
+        </div>
       ))}
 
       {/* Generate button - shown when content doesn't match any image */}

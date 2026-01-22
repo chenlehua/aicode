@@ -26,3 +26,10 @@ class GenerateTaskResponse(BaseModel):
     task_id: str
     status: str
     message: str
+
+
+class DeleteImageResponse(BaseModel):
+    """Response schema for deleting an image."""
+
+    success: bool
+    deleted_hash: str

@@ -10,9 +10,10 @@ import type { SlideImage } from "@/types";
 
 interface PreviewProps {
   onGenerate: (sid: string) => void;
+  onDeleteImage: (sid: string, imageHash: string) => void;
 }
 
-export function Preview({ onGenerate }: PreviewProps): JSX.Element {
+export function Preview({ onGenerate, onDeleteImage }: PreviewProps): JSX.Element {
   const slide = useSelectedSlide();
   const { style } = useStyleStore();
   const { isSlideGenerating } = useUIStore();
@@ -23,6 +24,15 @@ export function Preview({ onGenerate }: PreviewProps): JSX.Element {
       onGenerate(slide.sid);
     }
   }, [slide, onGenerate]);
+
+  const handleDeleteImage = useCallback(
+    (hash: string) => {
+      if (slide) {
+        onDeleteImage(slide.sid, hash);
+      }
+    },
+    [slide, onDeleteImage]
+  );
 
   const isGenerating = slide ? isSlideGenerating(slide.sid) : false;
 
@@ -102,6 +112,7 @@ export function Preview({ onGenerate }: PreviewProps): JSX.Element {
             images={images}
             currentHash={displayedImage?.hash || null}
             onSelect={handleSelectImage}
+            onDelete={handleDeleteImage}
             needsGeneration={needsGeneration && !isGenerating}
             isGenerating={isGenerating}
             onGenerate={handleGenerate}

@@ -6,7 +6,7 @@ from datetime import datetime
 
 from PIL import Image
 
-from app.exceptions import SlideNotFoundError, StyleNotSetError
+from app.exceptions import ImageNotFoundError, SlideNotFoundError, StyleNotSetError
 from app.models import SlideImage
 from app.repositories import ImageRepository, SlidesRepository, StyleRepository
 from app.services.gemini_service import GeminiService
@@ -137,3 +137,47 @@ class ImageService:
         buffer = io.BytesIO()
         image.save(buffer, format="JPEG", quality=75)
         return buffer.getvalue()
+
+    async def delete_image(self, slug: str, sid: str, image_hash: str) -> bool:
+        """Delete an image from a slide.
+
+        Args:
+            slug: Project slug
+            sid: Slide ID
+            image_hash: Hash of the image to delete
+
+        Returns:
+            True if deleted successfully
+        """
+        project = await self.slides_repository.get_or_create_project(slug)
+        slide = project.get_slide(sid)
+
+        if slide is None:
+            raise SlideNotFoundError(sid)
+
+        # Check if image exists in slide
+        image_to_delete = None
+        for img in slide.images:
+            if img.hash == image_hash:
+                image_to_delete = img
+                break
+
+        if image_to_delete is None:
+            raise ImageNotFoundError(image_hash)
+
+        # Delete from file system
+        await self.image_repository.delete_image(slug, sid, image_hash)
+
+        # Remove from slide's images list
+        slide.images = [img for img in slide.images if img.hash != image_hash]
+
+        # Update project
+        project.updated_at = datetime.now()
+        await self.slides_repository.save_project(project)
+
+        logger.info(
+            "Image deleted",
+            extra={"slug": slug, "sid": sid, "hash": image_hash},
+        )
+
+        return True

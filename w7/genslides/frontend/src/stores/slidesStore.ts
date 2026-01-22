@@ -24,6 +24,7 @@ interface SlidesState {
   addSlide: (slide: Slide, afterSid?: string) => void;
   updateSlide: (sid: string, content: string) => void;
   updateSlideImage: (sid: string, image: SlideImage) => void;
+  deleteSlideImage: (sid: string, imageHash: string) => void;
   setDisplayedImage: (sid: string, hash: string) => void;
   deleteSlide: (sid: string) => void;
   reorderSlides: (order: string[]) => void;
@@ -154,6 +155,43 @@ export const useSlidesStore = create<SlidesState>((set) => ({
       const newHash = { ...state.displayedImageHash, [sid]: hash };
       saveDisplayedImageHash(newHash);
       return { displayedImageHash: newHash };
+    }),
+
+  deleteSlideImage: (sid, imageHash) =>
+    set((state) => {
+      const newDisplayedImageHash = { ...state.displayedImageHash };
+
+      return {
+        slides: state.slides.map((s) => {
+          if (s.sid !== sid) return s;
+
+          // Remove the image from images array
+          const newImages = s.images?.filter((img) => img.hash !== imageHash) || [];
+
+          // Update current_image if it was the deleted one
+          let newCurrentImage = s.current_image;
+          if (s.current_image?.hash === imageHash) {
+            newCurrentImage = newImages.length > 0 ? newImages[newImages.length - 1] : null;
+          }
+
+          // Update displayed image if it was the deleted one
+          if (state.displayedImageHash[sid] === imageHash) {
+            if (newImages.length > 0) {
+              newDisplayedImageHash[sid] = newImages[newImages.length - 1].hash;
+            } else {
+              delete newDisplayedImageHash[sid];
+            }
+            saveDisplayedImageHash(newDisplayedImageHash);
+          }
+
+          return {
+            ...s,
+            images: newImages,
+            current_image: newCurrentImage,
+          };
+        }),
+        displayedImageHash: newDisplayedImageHash,
+      };
     }),
 
   deleteSlide: (sid) =>

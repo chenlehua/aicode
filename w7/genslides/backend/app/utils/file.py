@@ -57,3 +57,11 @@ async def list_files(path: Path, pattern: str = "*") -> list[Path]:
     if not await aiofiles.os.path.exists(path):
         return []
     return list(path.glob(pattern))
+
+
+async def delete_file(path: Path) -> bool:
+    """Delete a file if it exists. Returns True if deleted, False if not found."""
+    if await aiofiles.os.path.exists(path):
+        await aiofiles.os.remove(path)
+        return True
+    return False

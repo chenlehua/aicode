@@ -1,6 +1,6 @@
 """API request/response schemas."""
 
-from .images import GenerateImageRequest, GenerateTaskResponse, GetImagesResponse
+from .images import DeleteImageResponse, GenerateImageRequest, GenerateTaskResponse, GetImagesResponse
 from .slides import (
     CostResponse,
     CreateSlideRequest,
@@ -52,6 +52,7 @@ __all__ = [
     "SaveStyleResponse",
     "StyleCandidateResponse",
     # Images
+    "DeleteImageResponse",
     "GenerateImageRequest",
     "GenerateTaskResponse",
     "GetImagesResponse",

@@ -33,6 +33,17 @@ class SlideNotFoundError(AppError):
         )
 
 
+class ImageNotFoundError(AppError):
+    """Raised when an image is not found."""
+
+    def __init__(self, image_hash: str):
+        super().__init__(
+            code="IMAGE_NOT_FOUND",
+            message=f"Image '{image_hash}' not found",
+            status_code=404,
+        )
+
+
 class StyleNotSetError(AppError):
     """Raised when style is required but not set."""
 

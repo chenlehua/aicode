@@ -51,11 +51,11 @@ export function Header({ onTitleChange, onBackToHome }: HeaderProps): JSX.Elemen
         )}
         <div className="h-6 w-px bg-[var(--md-graphite)]" />
         <TitleInput title={title} onTitleChange={onTitleChange} />
-        <StyleBadge style={style} onClick={handleStyleClick} />
+        <CostDisplay cost={cost} />
       </div>
 
       <div className="flex items-center gap-4">
-        <CostDisplay cost={cost} />
+        <StyleBadge style={style} onClick={handleStyleClick} />
         <PlayButton onClick={handlePlay} disabled={!canPlay} />
       </div>
     </header>

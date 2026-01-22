@@ -9,6 +9,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends
 from app.api.dependencies import get_image_service, get_slides_service
 from app.api.routes.websocket import manager
 from app.api.schemas import (
+    DeleteImageResponse,
     GenerateImageRequest,
     GenerateTaskResponse,
     GetImagesResponse,
@@ -152,3 +153,25 @@ async def _generate_and_notify(
                 },
             },
         )
+
+
+@router.delete("/{slug}/{sid}/images/{image_hash}", response_model=DeleteImageResponse)
+async def delete_image(
+    slug: str,
+    sid: str,
+    image_hash: str,
+    service: Annotated[ImageService, Depends(get_image_service)],
+) -> DeleteImageResponse:
+    """Delete an image from a slide."""
+    await service.delete_image(slug, sid, image_hash)
+
+    # Notify clients that image was deleted
+    await manager.broadcast(
+        slug,
+        {
+            "type": "image_deleted",
+            "data": {"sid": sid, "hash": image_hash},
+        },
+    )
+
+    return DeleteImageResponse(success=True, deleted_hash=image_hash)

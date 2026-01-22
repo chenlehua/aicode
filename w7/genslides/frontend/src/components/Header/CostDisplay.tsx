@@ -1,5 +1,5 @@
 /**
- * Cost display component
+ * Cost display component - badge style with danger color
  */
 
 import type { CostInfo } from "@/types";
@@ -11,17 +11,16 @@ interface CostDisplayProps {
 
 export function CostDisplay({ cost }: CostDisplayProps): JSX.Element {
   if (!cost) {
-    return <span className="text-sm text-[var(--md-slate)]">--</span>;
+    return (
+      <span className="rounded border-2 border-[var(--md-graphite)] bg-[var(--md-fog)] px-2 py-0.5 text-xs text-[var(--md-slate)]">
+        --
+      </span>
+    );
   }
 
   return (
-    <div className="flex items-center gap-2 text-sm">
-      <span className="text-[var(--md-slate)]">
-        {cost.total_images} images
-      </span>
-      <span className="font-bold text-[var(--md-ink)]">
-        {formatCost(cost.estimated_cost)}
-      </span>
-    </div>
+    <span className="rounded border-2 border-[var(--md-graphite)] bg-[var(--md-watermelon)] px-2 py-0.5 text-xs font-bold text-white">
+      {cost.total_images} img · {formatCost(cost.estimated_cost)}
+    </span>
   );
 }

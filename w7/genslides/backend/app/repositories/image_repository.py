@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from app.utils import ensure_directory, file_exists, list_files, read_bytes, write_bytes
+from app.utils import delete_file, ensure_directory, file_exists, list_files, read_bytes, write_bytes
 
 
 class ImageRepository:
@@ -51,6 +51,16 @@ class ImageRepository:
     async def image_exists(self, slug: str, sid: str, hash: str) -> bool:
         """Check if an image exists."""
         return await file_exists(self._get_image_path(slug, sid, hash))
+
+    async def delete_image(self, slug: str, sid: str, hash: str) -> bool:
+        """Delete an image and its thumbnail. Returns True if deleted."""
+        image_path = self._get_image_path(slug, sid, hash)
+        thumbnail_path = self._get_thumbnail_path(slug, sid, hash)
+
+        image_deleted = await delete_file(image_path)
+        await delete_file(thumbnail_path)  # Also delete thumbnail if exists
+
+        return image_deleted
 
     async def list_images(self, slug: str, sid: str) -> list[str]:
         """List all image hashes for a slide."""
