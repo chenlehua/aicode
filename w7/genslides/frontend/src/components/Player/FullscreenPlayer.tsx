@@ -9,7 +9,7 @@ import { cn } from "@/utils";
 export function FullscreenPlayer(): JSX.Element | null {
   const { isFullscreen, currentIndex, isPlaying, next, prev, exitFullscreen, pause, play } =
     usePlayerStore();
-  const { slides } = useSlidesStore();
+  const { slides, displayedImageHash } = useSlidesStore();
 
   // Handle keyboard navigation
   const handleKeyDown = useCallback(
@@ -73,13 +73,27 @@ export function FullscreenPlayer(): JSX.Element | null {
 
   const currentSlide = slides[currentIndex];
 
+  // Get the displayed image for current slide (respects user selection)
+  const getDisplayedImage = () => {
+    if (!currentSlide) return null;
+    const hash = displayedImageHash[currentSlide.sid];
+    if (hash && currentSlide.images) {
+      const found = currentSlide.images.find((img) => img.hash === hash);
+      if (found) return found;
+    }
+    // Fallback to current_image
+    return currentSlide.current_image;
+  };
+
+  const displayedImage = getDisplayedImage();
+
   return (
     <div className="fixed inset-0 z-50 bg-black">
       {/* Main content */}
       <div className="flex h-full items-center justify-center">
-        {currentSlide?.current_image ? (
+        {displayedImage ? (
           <img
-            src={currentSlide.current_image.url}
+            src={displayedImage.url}
             alt={`Slide ${currentIndex + 1}`}
             className="max-h-full max-w-full object-contain"
           />

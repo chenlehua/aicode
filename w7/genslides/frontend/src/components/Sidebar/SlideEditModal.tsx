@@ -36,7 +36,10 @@ export function SlideEditModal({
   }, [isOpen, content]);
 
   const handleSave = () => {
-    onSave(editContent);
+    // Only save if content actually changed
+    if (editContent !== content) {
+      onSave(editContent);
+    }
     onClose();
   };
 

@@ -94,7 +94,7 @@ export function Preview({ onGenerate }: PreviewProps): JSX.Element {
     <div className="flex h-full flex-col bg-[var(--md-cream)]">
       {/* Main image area with floating thumbnails */}
       <div className="relative flex-1 flex items-center justify-center p-2">
-        <MainImage image={displayedImage} isGenerating={isGenerating} />
+        <MainImage image={displayedImage} isGenerating={isGenerating} hasMatchedImage={hasMatchedImage} />
 
         {/* Floating thumbnail list at bottom center */}
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2">

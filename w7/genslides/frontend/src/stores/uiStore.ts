@@ -24,6 +24,7 @@ interface UIState {
   setSidebarCollapsed: (collapsed: boolean) => void;
   addGeneratingSlide: (sid: string) => void;
   removeGeneratingSlide: (sid: string) => void;
+  setGeneratingSlides: (sids: string[]) => void;
   isSlideGenerating: (sid: string) => boolean;
   reset: () => void;
 }
@@ -82,6 +83,9 @@ export const useUIStore = create<UIState>((set, get) => ({
       newSet.delete(sid);
       return { generatingSlides: newSet };
     }),
+
+  setGeneratingSlides: (sids) =>
+    set({ generatingSlides: new Set(sids) }),
 
   isSlideGenerating: (sid) => get().generatingSlides.has(sid),
 

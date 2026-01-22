@@ -47,18 +47,28 @@ async function request<T>(
     headers.set("Content-Type", "application/json");
   }
 
+  // Debug: log request details
+  if (import.meta.env.DEV) {
+    console.log("[API Request]", fetchOptions.method, url, fetchOptions.body);
+  }
+
   const response = await fetch(url, {
     ...fetchOptions,
     headers,
   });
 
   if (!response.ok) {
-    let errorData: { error?: { code?: string; message?: string } } | null =
+    let errorData: { error?: { code?: string; message?: string; details?: unknown } } | null =
       null;
     try {
       errorData = await response.json();
     } catch {
       // Ignore JSON parse errors
+    }
+
+    // Log error details in dev mode
+    if (import.meta.env.DEV) {
+      console.error("[API Error]", response.status, errorData);
     }
 
     throw new ApiError(

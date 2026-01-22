@@ -51,6 +51,7 @@ class ImageService:
         Returns:
             The generated SlideImage
         """
+        # First, get project data for validation and content
         project = await self.slides_repository.get_or_create_project(slug)
         slide = project.get_slide(sid)
 
@@ -75,7 +76,7 @@ class ImageService:
         if style_image is None:
             raise StyleNotSetError()
 
-        # Generate new image
+        # Generate new image (this is the slow part)
         logger.info("Generating image", extra={"slug": slug, "sid": sid})
         image_data = await self.gemini_service.generate_slide_image(
             content=slide.content,
@@ -97,15 +98,22 @@ class ImageService:
             created_at=datetime.now(),
         )
 
-        # Update slide and project
-        slide.images.append(slide_image)
-        project.cost.slide_generations += 1
-        project.cost.total_images += 1
-        project.cost.estimated_cost = (
-            project.cost.style_generations * 0.02 + project.cost.slide_generations * 0.02
-        )
-        project.updated_at = datetime.now()
-        await self.slides_repository.save_project(project)
+        # Re-read project data and update atomically to avoid race conditions
+        # This ensures we don't overwrite changes made by concurrent requests
+        updated_project = await self.slides_repository.get_or_create_project(slug)
+        updated_slide = updated_project.get_slide(sid)
+        if updated_slide is not None:
+            # Check if image already exists (another request might have added it)
+            if not any(img.hash == content_hash for img in updated_slide.images):
+                updated_slide.images.append(slide_image)
+            updated_project.cost.slide_generations += 1
+            updated_project.cost.total_images += 1
+            updated_project.cost.estimated_cost = (
+                updated_project.cost.style_generations * 0.02
+                + updated_project.cost.slide_generations * 0.02
+            )
+            updated_project.updated_at = datetime.now()
+            await self.slides_repository.save_project(updated_project)
 
         return slide_image
 

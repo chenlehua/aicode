@@ -8,9 +8,10 @@ import type { SlideImage } from "@/types";
 interface MainImageProps {
   image: SlideImage | null;
   isGenerating: boolean;
+  hasMatchedImage?: boolean;
 }
 
-export function MainImage({ image, isGenerating }: MainImageProps): JSX.Element {
+export function MainImage({ image, isGenerating, hasMatchedImage = false }: MainImageProps): JSX.Element {
   return (
     <div
       className={cn(
@@ -60,8 +61,8 @@ export function MainImage({ image, isGenerating }: MainImageProps): JSX.Element 
         </div>
       )}
 
-      {/* Content changed indicator */}
-      {image && !image.matched && !isGenerating && (
+      {/* Content changed indicator - only show if no image matches current content */}
+      {image && !hasMatchedImage && !isGenerating && (
         <div className="absolute left-3 top-3 rounded border-2 border-[var(--md-graphite)] bg-[var(--md-sunbeam)] px-3 py-1.5 text-sm font-bold shadow-[2px_2px_0_0_rgba(0,0,0,1)]">
           Content changed - regenerate
         </div>

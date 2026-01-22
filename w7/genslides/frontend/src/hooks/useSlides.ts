@@ -133,13 +133,22 @@ export function useSlides(slug: string, initialTitle?: string | null) {
   // Update slide content
   const updateSlideContent = useCallback(
     async (sid: string, content: string) => {
+      // Warn if content is empty but allow it
+      if (typeof content !== "string") {
+        logger.error("Invalid content type:", typeof content);
+        return;
+      }
+
+      logger.info("Updating slide content:", { sid, contentLength: content.length });
+
       try {
         await slidesApi.updateSlide(slug, sid, content);
         useSlidesStore.getState().updateSlide(sid, content);
       } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to update slide";
         addToast({
           type: "error",
-          message: "Failed to update slide",
+          message,
         });
         logger.error("Failed to update slide:", err);
       }

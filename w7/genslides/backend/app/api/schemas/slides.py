@@ -72,14 +72,14 @@ class UpdateTitleResponse(BaseModel):
 class CreateSlideRequest(BaseModel):
     """Request schema for creating a slide."""
 
-    content: str = Field(..., min_length=1, max_length=10000)
+    content: str = Field(default="", max_length=20000)
     after_sid: str | None = None
 
 
 class UpdateSlideRequest(BaseModel):
     """Request schema for updating slide content."""
 
-    content: str = Field(..., min_length=1, max_length=10000)
+    content: str = Field(..., max_length=20000)
 
 
 class ReorderSlidesRequest(BaseModel):

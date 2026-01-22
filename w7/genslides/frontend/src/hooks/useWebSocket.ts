@@ -11,12 +11,19 @@ import { logger } from "@/utils";
 export function useWebSocket(slug: string) {
   const clientRef = useRef<WebSocketClient | null>(null);
   const { updateSlideImage, setCost } = useSlidesStore();
-  const { addToast, removeGeneratingSlide } = useUIStore();
+  const { addToast, removeGeneratingSlide, setGeneratingSlides } = useUIStore();
 
   // Handle incoming messages
   const handleMessage = useCallback(
     (message: WSMessage) => {
       switch (message.type) {
+        case "sync_generating_tasks": {
+          const data = message.data as { sids: string[] };
+          setGeneratingSlides(data.sids);
+          logger.debug("Synced generating tasks:", data.sids);
+          break;
+        }
+
         case "generation_completed": {
           const data = message.data as GenerationCompletedData;
           updateSlideImage(data.sid, {
@@ -68,7 +75,7 @@ export function useWebSocket(slug: string) {
         }
       }
     },
-    [updateSlideImage, removeGeneratingSlide, setCost, addToast]
+    [updateSlideImage, removeGeneratingSlide, setGeneratingSlides, setCost, addToast]
   );
 
   // Connect on mount, disconnect on unmount

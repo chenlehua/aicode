@@ -24,6 +24,12 @@ export default defineConfig({
       "/ws": {
         target: "ws://localhost:3003",
         ws: true,
+        // Suppress proxy errors in console (connection resets are expected during reconnects)
+        configure: (proxy) => {
+          proxy.on("error", () => {
+            // Silently ignore proxy errors - WebSocket client will reconnect
+          });
+        },
       },
     },
   },

@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -74,6 +75,46 @@ async def app_exception_handler(request: Request, exc: AppError) -> JSONResponse
             "error": {
                 "code": exc.code,
                 "message": exc.message,
+            }
+        },
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
+    """Handle validation exceptions with detailed logging."""
+    logger.error(
+        "Validation error",
+        extra={
+            "url": str(request.url),
+            "method": request.method,
+            "errors": exc.errors(),
+        },
+    )
+    # Return first error message for user-friendly response
+    errors = exc.errors()
+    if errors:
+        first_error = errors[0]
+        field = ".".join(str(loc) for loc in first_error.get("loc", []))
+        msg = first_error.get("msg", "Validation failed")
+        return JSONResponse(
+            status_code=422,
+            content={
+                "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": f"{field}: {msg}",
+                    "details": errors,
+                }
+            },
+        )
+    return JSONResponse(
+        status_code=422,
+        content={
+            "error": {
+                "code": "VALIDATION_ERROR",
+                "message": "Validation failed",
             }
         },
     )

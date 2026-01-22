@@ -68,6 +68,9 @@ async def generate_image(
     """Start async image generation for a slide."""
     task_id = str(uuid.uuid4())
 
+    # Track the generating task
+    manager.add_generating_task(slug, sid, task_id)
+
     # Notify clients that generation started
     await manager.broadcast(
         slug,
@@ -109,6 +112,9 @@ async def _generate_and_notify(
         )
         slide_image = await service.generate_image(slug, sid, force)
 
+        # Remove from generating tasks
+        manager.remove_generating_task(slug, sid)
+
         # Notify success
         await manager.broadcast(
             slug,
@@ -130,6 +136,10 @@ async def _generate_and_notify(
 
     except Exception as e:
         logger.exception("Generation failed", extra={"slug": slug, "sid": sid})
+
+        # Remove from generating tasks
+        manager.remove_generating_task(slug, sid)
+
         # Notify failure
         await manager.broadcast(
             slug,
