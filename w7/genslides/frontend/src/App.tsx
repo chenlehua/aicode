@@ -36,6 +36,7 @@ export function App(): JSX.Element {
     createSlide,
     updateSlideContent,
     deleteSlide,
+    reorderSlides,
   } = useSlides(slug);
 
   const { generateCandidates, saveStyle } = useStyle(slug);
@@ -44,13 +45,13 @@ export function App(): JSX.Element {
   // WebSocket connection for real-time updates
   useWebSocket(slug);
 
-  // Keyboard shortcuts
-  useKeyboard();
-
   // Handlers
-  const handleAddSlide = useCallback(async () => {
-    await createSlide("New slide content", selectedSid || undefined);
+  const handleAddSlide = useCallback(async (afterSid?: string) => {
+    await createSlide("New slide content", afterSid || selectedSid || undefined);
   }, [createSlide, selectedSid]);
+
+  // Keyboard shortcuts - pass handleAddSlide for Enter key
+  useKeyboard({ onCreateSlide: handleAddSlide });
 
   const handleContentChange = useCallback(
     (sid: string, content: string) => {
@@ -120,6 +121,7 @@ export function App(): JSX.Element {
               onDelete={deleteSlide}
               onAddSlide={handleAddSlide}
               onContentChange={handleContentChange}
+              onReorder={reorderSlides}
             />
           </ErrorBoundary>
 

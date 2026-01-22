@@ -90,3 +90,18 @@ for part in response.parts:
 
 
 主图片区域底部应该有缩略图，缩略图应该居中，浮在图片上。生成图片的按钮不需要了，其功能放在缩略图列表即可：当文字和图片没有匹配时，显示+button（tooltip：生成当前文字的图片）
+
+
+请仔细阅读./w7/genslides/frontend下代码，以及./specs/w7/0002-design-spec.md中的设计稿，优化界面：
+1.对于侧边栏slide，选中并拖拽可以改变顺序
+2.左上角应该有LoGo和工具名称GenSlides，请根据当前系统的功能设计LoGO
+3.用户点击某个 slide 后设定锚点，按回车键在该 slide 下方创建新的 slide
+
+
+
+根据项目代码分别生成 ascii chart:
+1.前端架构
+2.后端架构
+3.数据流图
+4.前端技术栈
+5.后端技术栈

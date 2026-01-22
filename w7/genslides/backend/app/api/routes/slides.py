@@ -120,18 +120,6 @@ async def create_slide(
     return _slide_to_response(slide, slug)
 
 
-@router.put("/{slug}/{sid}", response_model=SlideResponse)
-async def update_slide(
-    slug: str,
-    sid: str,
-    request: UpdateSlideRequest,
-    service: Annotated[SlidesService, Depends(get_slides_service)],
-) -> SlideResponse:
-    """Update slide content."""
-    slide = await service.update_slide(slug, sid, request.content)
-    return _slide_to_response(slide, slug)
-
-
 @router.put("/{slug}/reorder", response_model=ReorderSlidesResponse)
 async def reorder_slides(
     slug: str,
@@ -144,6 +132,18 @@ async def reorder_slides(
         success=True,
         slides=[_slide_to_response(s, slug) for s in slides],
     )
+
+
+@router.put("/{slug}/{sid}", response_model=SlideResponse)
+async def update_slide(
+    slug: str,
+    sid: str,
+    request: UpdateSlideRequest,
+    service: Annotated[SlidesService, Depends(get_slides_service)],
+) -> SlideResponse:
+    """Update slide content."""
+    slide = await service.update_slide(slug, sid, request.content)
+    return _slide_to_response(slide, slug)
 
 
 @router.delete("/{slug}/{sid}", response_model=DeleteSlideResponse)

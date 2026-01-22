@@ -13,9 +13,16 @@ interface SlideItemProps {
   index: number;
   isSelected: boolean;
   isGenerating: boolean;
+  isDragging?: boolean;
+  isDragOver?: boolean;
   onSelect: (sid: string) => void;
   onDelete: (sid: string) => void;
   onContentChange: (sid: string, content: string) => void;
+  onDragStart?: (e: React.DragEvent, sid: string) => void;
+  onDragEnd?: (e: React.DragEvent) => void;
+  onDragOver?: (e: React.DragEvent, sid: string) => void;
+  onDragLeave?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent, sid: string) => void;
 }
 
 export function SlideItem({
@@ -23,9 +30,16 @@ export function SlideItem({
   index,
   isSelected,
   isGenerating,
+  isDragging = false,
+  isDragOver = false,
   onSelect,
   onDelete,
   onContentChange,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDragLeave,
+  onDrop,
 }: SlideItemProps): JSX.Element {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const { displayedImageHash } = useSlidesStore();
@@ -62,10 +76,18 @@ export function SlideItem({
           "hover:translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[-3px_3px_0_0_rgba(0,0,0,1)]",
           isSelected
             ? "bg-[var(--md-sunbeam)]"
-            : "bg-[var(--md-cloud)] hover:bg-[var(--md-fog)]"
+            : "bg-[var(--md-cloud)] hover:bg-[var(--md-fog)]",
+          isDragging && "opacity-50 scale-95",
+          isDragOver && "ring-2 ring-[var(--md-sky-strong)] ring-offset-2"
         )}
         onClick={() => onSelect(slide.sid)}
         onDoubleClick={handleDoubleClick}
+        draggable
+        onDragStart={(e) => onDragStart?.(e, slide.sid)}
+        onDragEnd={onDragEnd}
+        onDragOver={(e) => onDragOver?.(e, slide.sid)}
+        onDragLeave={onDragLeave}
+        onDrop={(e) => onDrop?.(e, slide.sid)}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {

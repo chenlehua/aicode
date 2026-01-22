@@ -2,6 +2,7 @@
  * Header component
  */
 
+import { Logo } from "./Logo";
 import { TitleInput } from "./TitleInput";
 import { StyleBadge } from "./StyleBadge";
 import { CostDisplay } from "./CostDisplay";
@@ -35,7 +36,9 @@ export function Header({ onTitleChange }: HeaderProps): JSX.Element {
 
   return (
     <header className="md-eyebrow">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-6">
+        <Logo />
+        <div className="h-6 w-px bg-[var(--md-graphite)]" />
         <TitleInput title={title} onTitleChange={onTitleChange} />
         <StyleBadge style={style} onClick={handleStyleClick} />
       </div>

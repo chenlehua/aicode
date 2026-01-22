@@ -7,10 +7,11 @@ import { usePlayerStore, useSlidesStore } from "@/stores";
 
 interface KeyboardOptions {
   enabled?: boolean;
+  onCreateSlide?: (afterSid?: string) => void;
 }
 
 export function useKeyboard(options: KeyboardOptions = {}) {
-  const { enabled = true } = options;
+  const { enabled = true, onCreateSlide } = options;
 
   const { slides, selectedSid, selectSlide } = useSlidesStore();
   const { isFullscreen, isPlaying, next, prev, exitFullscreen, pause, play } =
@@ -75,6 +76,13 @@ export function useKeyboard(options: KeyboardOptions = {}) {
             }
           }
           break;
+        case "Enter":
+          // Create new slide after selected slide when Enter is pressed
+          if (onCreateSlide) {
+            event.preventDefault();
+            onCreateSlide(selectedSid || undefined);
+          }
+          break;
       }
     },
     [
@@ -88,6 +96,7 @@ export function useKeyboard(options: KeyboardOptions = {}) {
       exitFullscreen,
       pause,
       play,
+      onCreateSlide,
     ]
   );
 

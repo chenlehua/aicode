@@ -12,8 +12,9 @@ interface SidebarProps {
   selectedSid: string | null;
   onSelect: (sid: string) => void;
   onDelete: (sid: string) => void;
-  onAddSlide: () => void;
+  onAddSlide: (afterSid?: string) => void;
   onContentChange: (sid: string, content: string) => void;
+  onReorder?: (order: string[]) => void;
   isCollapsed?: boolean;
 }
 
@@ -24,6 +25,7 @@ export function Sidebar({
   onDelete,
   onAddSlide,
   onContentChange,
+  onReorder,
   isCollapsed = false,
 }: SidebarProps): JSX.Element {
   return (
@@ -37,7 +39,7 @@ export function Sidebar({
       {/* Header */}
       <div className="flex items-center justify-between border-b-2 border-[var(--md-graphite)] p-4">
         <h2 className="text-sm font-bold uppercase tracking-wider">Slides</h2>
-        <Button size="sm" onClick={onAddSlide}>
+        <Button size="sm" onClick={() => onAddSlide(selectedSid || undefined)}>
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="14"
@@ -65,6 +67,7 @@ export function Sidebar({
           onSelect={onSelect}
           onDelete={onDelete}
           onContentChange={onContentChange}
+          onReorder={onReorder}
         />
       </div>
     </aside>
