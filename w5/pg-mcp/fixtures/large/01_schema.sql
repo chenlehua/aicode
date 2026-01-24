@@ -692,7 +692,7 @@ CREATE TABLE finance.invoices (
     paid_amount DECIMAL(15,2) DEFAULT 0,
     currency VARCHAR(3) DEFAULT 'CNY',
     exchange_rate DECIMAL(10,6) DEFAULT 1,
-    payment_status finance.payment_status DEFAULT 'pending',
+    payment_status sales.payment_status DEFAULT 'pending',
     notes TEXT,
     created_by INTEGER REFERENCES hr.employees(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -835,11 +835,16 @@ CREATE TABLE inventory.stock (
     quantity_available DECIMAL(15,3) GENERATED ALWAYS AS (quantity_on_hand - quantity_reserved) STORED,
     last_count_date DATE,
     expiry_date DATE,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(product_id, warehouse_id, location_id, COALESCE(lot_number, ''), COALESCE(serial_number, ''))
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 COMMENT ON TABLE inventory.stock IS '库存表';
+
+-- 库存唯一索引（使用 COALESCE 处理 NULL 值）
+CREATE UNIQUE INDEX idx_stock_unique ON inventory.stock (
+    product_id, warehouse_id, COALESCE(location_id, 0), 
+    COALESCE(lot_number, ''), COALESCE(serial_number, '')
+);
 
 -- 38. 库存移动
 CREATE TABLE inventory.stock_movements (

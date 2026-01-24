@@ -138,7 +138,7 @@ SELECT
     '# 文章内容\n\n这是第 ' || generate_series || ' 篇技术文章的正文内容。\n\n## 章节一\n\n详细内容...\n\n## 章节二\n\n更多内容...',
     1 + (generate_series % 20),
     1 + (generate_series % 5),
-    CASE WHEN generate_series % 8 = 0 THEN 'draft' ELSE 'published' END,
+    (CASE WHEN generate_series % 8 = 0 THEN 'draft' ELSE 'published' END)::post_status,
     (random() * 5000)::int,
     (random() * 300)::int,
     generate_series % 15 = 0,

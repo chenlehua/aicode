@@ -82,9 +82,9 @@ SELECT
         ELSE '杰'
     END,
     'customer',
-    CASE WHEN generate_series % 20 = 0 THEN 'inactive' 
+    (CASE WHEN generate_series % 20 = 0 THEN 'inactive' 
          WHEN generate_series % 50 = 0 THEN 'suspended'
-         ELSE 'active' END,
+         ELSE 'active' END)::account_status,
     generate_series % 3 != 0,
     generate_series % 5 != 0,
     floor(random() * 50)::int,
@@ -98,9 +98,9 @@ FROM generate_series(1, 467);
 INSERT INTO user_addresses (user_id, address_type, recipient_name, phone, province, city, district, street_address, postal_code, is_default)
 SELECT 
     u.id,
-    CASE WHEN row_number() OVER (PARTITION BY u.id ORDER BY random()) = 1 THEN 'both' 
+    (CASE WHEN row_number() OVER (PARTITION BY u.id ORDER BY random()) = 1 THEN 'both' 
          WHEN random() < 0.5 THEN 'shipping' 
-         ELSE 'billing' END,
+         ELSE 'billing' END)::address_type,
     CONCAT(u.first_name, u.last_name),
     u.phone,
     CASE (floor(random() * 10)::int)
@@ -300,7 +300,7 @@ INSERT INTO brands (name, slug, description, country, is_featured) VALUES
 INSERT INTO products (store_id, category_id, brand_id, sku, name, slug, short_description, description, price, compare_at_price, cost_price, status, stock_quantity, low_stock_threshold, weight, is_featured, view_count, sold_count, rating, review_count)
 SELECT 
     1 + (gs % 30),
-    11 + (gs % 50),
+    1 + (gs % 47),
     1 + (gs % 50),
     'SKU-' || LPAD(gs::TEXT, 6, '0'),
     CASE (gs % 20)
@@ -349,9 +349,9 @@ SELECT
         END + (random() * 500)::int)
     END,
     (random() * 1000 + 100)::DECIMAL(12,2),
-    CASE WHEN gs % 15 = 0 THEN 'out_of_stock'
+    (CASE WHEN gs % 15 = 0 THEN 'out_of_stock'
          WHEN gs % 25 = 0 THEN 'draft'
-         ELSE 'active' END,
+         ELSE 'active' END)::product_status,
     floor(random() * 500)::int,
     10,
     (random() * 5)::DECIMAL(10,3),
@@ -682,11 +682,17 @@ INSERT INTO promotions (name, description, promotion_type, discount_type, discou
 
 -- 关联促销商品
 INSERT INTO promotion_products (promotion_id, product_id)
-SELECT 
-    p.id,
-    (SELECT id FROM products WHERE status = 'active' ORDER BY random() LIMIT 1)
-FROM promotions p
-CROSS JOIN generate_series(1, 20);
+SELECT DISTINCT ON (promotion_id, product_id)
+    promotion_id,
+    product_id
+FROM (
+    SELECT 
+        p.id AS promotion_id,
+        (SELECT id FROM products WHERE status = 'active' ORDER BY random() LIMIT 1) AS product_id
+    FROM promotions p
+    CROSS JOIN generate_series(1, 20)
+) t
+ON CONFLICT DO NOTHING;
 
 -- =====================================================
 -- 系统配置数据

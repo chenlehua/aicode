@@ -161,12 +161,12 @@ SELECT
         WHEN 5 THEN '杨' WHEN 6 THEN '赵' WHEN 7 THEN '黄' WHEN 8 THEN '周' ELSE '吴'
     END,
     CASE WHEN random() < 0.55 THEN 'male' ELSE 'female' END::hr.gender,
-    DATE '1970-01-01' + (random() * 10000)::int,
+    (DATE '1970-01-01' + ((random() * 10000)::int || ' days')::interval)::date,
     '1' || LPAD((3800000000 + gs)::TEXT, 10, '0'),
     'emp' || gs || '@example.com',
     CASE WHEN gs <= 500 THEN 1 + (gs % 28) WHEN gs <= 750 THEN 29 + (gs % 8) ELSE 37 + (gs % 8) END,
     CASE WHEN gs <= 500 THEN 1 + (gs % 21) WHEN gs <= 750 THEN 22 + (gs % 5) ELSE 27 + (gs % 5) END,
-    DATE '2010-01-01' + (random() * 5000)::int,
+    (DATE '2010-01-01' + ((random() * 5000)::int || ' days')::interval)::date,
     CASE WHEN random() < 0.85 THEN 'full_time' 
          WHEN random() < 0.95 THEN 'contract' 
          ELSE 'part_time' END::hr.contract_type,
@@ -258,8 +258,8 @@ INSERT INTO hr.leave_requests (employee_id, leave_type, start_date, end_date, da
 SELECT 
     e.id,
     (ARRAY['annual', 'sick', 'personal', 'annual', 'sick'])[1 + floor(random() * 5)::int]::hr.leave_type,
-    CURRENT_DATE - (random() * 180)::int,
-    CURRENT_DATE - (random() * 180)::int + (1 + floor(random() * 5))::int,
+    (CURRENT_DATE - ((random() * 180)::int || ' days')::interval)::date,
+    (CURRENT_DATE - ((random() * 180)::int || ' days')::interval + ((1 + floor(random() * 5))::int || ' days')::interval)::date,
     1 + floor(random() * 5)::DECIMAL(4,1),
     CASE (floor(random() * 5)::int)
         WHEN 0 THEN '家庭事务需要处理'
@@ -268,7 +268,7 @@ SELECT
         WHEN 3 THEN '年假休息'
         ELSE '医院检查'
     END,
-    CASE WHEN random() < 0.8 THEN 'approved' WHEN random() < 0.95 THEN 'pending' ELSE 'rejected' END,
+    CASE WHEN random() < 0.8 THEN 'approved' WHEN random() < 0.95 THEN 'pending' ELSE 'rejected' END::VARCHAR(20),
     NOW() - (random() * 180 || ' days')::interval
 FROM hr.employees e
 WHERE e.status = 'active' AND random() < 0.5
@@ -320,8 +320,8 @@ INSERT INTO hr.training_records (employee_id, course_id, session_date, completio
 SELECT 
     e.id,
     c.id,
-    CURRENT_DATE - (random() * 365)::int,
-    CURRENT_DATE - (random() * 365)::int + 5,
+    (CURRENT_DATE - ((random() * 365)::int || ' days')::interval)::date,
+    (CURRENT_DATE - ((random() * 365)::int || ' days')::interval + INTERVAL '5 days')::date,
     60 + (random() * 40)::DECIMAL(5,2),
     random() < 0.9,
     CASE WHEN random() < 0.7 THEN 'completed' WHEN random() < 0.9 THEN 'enrolled' ELSE 'cancelled' END,
@@ -626,7 +626,7 @@ SELECT
     'PO-' || TO_CHAR(CURRENT_DATE - (gs || ' days')::interval, 'YYYYMMDD') || '-' || LPAD(gs::TEXT, 4, '0'),
     (SELECT id FROM procurement.suppliers ORDER BY random() LIMIT 1),
     CURRENT_DATE - (gs || ' days')::interval,
-    CURRENT_DATE - (gs || ' days')::interval + (14 + floor(random() * 14))::int,
+    (CURRENT_DATE - (gs || ' days')::interval + ((14 + floor(random() * 14))::int || ' days')::interval)::date,
     (SELECT id FROM inventory.warehouses WHERE company_id = 1 ORDER BY random() LIMIT 1),
     'CNY',
     (random() * 50000)::DECIMAL(15,2),
@@ -697,7 +697,7 @@ SELECT
     CASE WHEN gs > 50 THEN (50 + (random() * 450)::int) ELSE (random() * 200)::int END,
     (SELECT id FROM inventory.warehouses WHERE company_id = 1 ORDER BY random() LIMIT 1),
     CURRENT_DATE - (gs || ' days')::interval,
-    CURRENT_DATE - (gs || ' days')::interval + (7 + floor(random() * 14))::int,
+    (CURRENT_DATE - (gs || ' days')::interval + ((7 + floor(random() * 14))::int || ' days')::interval)::date,
     CASE 
         WHEN gs <= 20 THEN 'planned'
         WHEN gs <= 40 THEN 'in_progress'
