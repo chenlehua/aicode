@@ -1,0 +1,122 @@
+# =====================================================
+# PostgreSQL MCP Server - Test Fixtures
+# 三个测试数据库：small, medium, large
+# =====================================================
+
+services:
+  # =====================================================
+  # Small Database - Blog System (博客系统)
+  # Tables: 8 | Views: 3 | Types: 2 | Data: ~1000 rows
+  # =====================================================
+  pg-small:
+    image: postgres:16-alpine
+    container_name: pg-mcp-small
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: blog_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg-small-data:/var/lib/postgresql/data
+      - ./small/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./small/02_data.sql:/docker-entrypoint-initdb.d/02_data.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d blog_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pg-mcp-network
+    restart: unless-stopped
+
+  # =====================================================
+  # Medium Database - E-Commerce Platform (电商平台)
+  # Tables: 25 | Views: 10 | Types: 8 | Data: ~50000 rows
+  # =====================================================
+  pg-medium:
+    image: postgres:16-alpine
+    container_name: pg-mcp-medium
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ecommerce_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg-medium-data:/var/lib/postgresql/data
+      - ./medium/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./medium/02_data.sql:/docker-entrypoint-initdb.d/02_data.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ecommerce_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pg-mcp-network
+    restart: unless-stopped
+
+  # =====================================================
+  # Large Database - Enterprise ERP System (企业ERP系统)
+  # Tables: 60 | Views: 20 | Types: 15 | Data: ~100000 rows
+  # =====================================================
+  pg-large:
+    image: postgres:16-alpine
+    container_name: pg-mcp-large
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: erp_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - pg-large-data:/var/lib/postgresql/data
+      - ./large/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./large/02_data.sql:/docker-entrypoint-initdb.d/02_data.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d erp_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pg-mcp-network
+    restart: unless-stopped
+
+  # =====================================================
+  # pgAdmin - Database Management UI (可选)
+  # =====================================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pg-mcp-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    depends_on:
+      - pg-small
+      - pg-medium
+      - pg-large
+    networks:
+      - pg-mcp-network
+    restart: unless-stopped
+    profiles:
+      - admin
+
+volumes:
+  pg-small-data:
+    name: pg-mcp-small-data
+  pg-medium-data:
+    name: pg-mcp-medium-data
+  pg-large-data:
+    name: pg-mcp-large-data
+  pgadmin-data:
+    name: pg-mcp-pgadmin-data
+
+networks:
+  pg-mcp-network:
+    name: pg-mcp-network
+    driver: bridge
