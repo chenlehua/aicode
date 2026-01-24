@@ -1,0 +1,17 @@
+"""LLM components for pg-mcp."""
+
+from pg_mcp.llm.prompts import (
+    RESULT_VALIDATION_SYSTEM_PROMPT,
+    RESULT_VALIDATION_USER_TEMPLATE,
+    SQL_GENERATION_SYSTEM_PROMPT,
+    SQL_GENERATION_USER_TEMPLATE,
+)
+from pg_mcp.llm.service import LLMService
+
+__all__ = [
+    "SQL_GENERATION_SYSTEM_PROMPT",
+    "SQL_GENERATION_USER_TEMPLATE",
+    "RESULT_VALIDATION_SYSTEM_PROMPT",
+    "RESULT_VALIDATION_USER_TEMPLATE",
+    "LLMService",
+]

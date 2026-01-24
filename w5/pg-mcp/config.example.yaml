@@ -1,0 +1,26 @@
+# PostgreSQL MCP Server Configuration Example
+# Copy this file and modify it according to your environment.
+
+# Database Connections
+# You can configure multiple PostgreSQL databases.
+# Environment variable substitution is supported: ${VAR_NAME} or ${VAR_NAME:default_value}
+databases:
+  # Production database example
+  - name: "production_db"
+    host: "${PG_HOST:localhost}"
+    port: 5432
+    database: "${PG_DATABASE:myapp}"
+    user: "${PG_USER:readonly_user}"
+    password: "${PG_PASSWORD}"  # Required: set PG_PASSWORD environment variable
+    min_pool_size: 2
+    max_pool_size: 10
+    ssl: false
+
+  # Analytics database example (commented out)
+  # - name: "analytics_db"
+  #   host: "analytics.example.com"
+  #   port: 5432
+  #   database: "analytics"
+  #   user: "analyst"
+  #   password: "${ANALYTICS_PASSWORD}"
+  #   ssl: true
