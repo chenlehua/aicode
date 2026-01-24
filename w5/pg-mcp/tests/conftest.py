@@ -1,5 +1,6 @@
 """Shared test fixtures for pg-mcp tests."""
 
+import os
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 
@@ -11,6 +12,21 @@ from pg_mcp.models import (
     TableInfo,
     ValidationResult,
 )
+
+
+# ============ Pytest Hooks ============
+
+
+def pytest_collection_modifyitems(config, items):
+    """Automatically add markers based on test path."""
+    for item in items:
+        # Add markers based on directory
+        if "/unit/" in str(item.fspath):
+            item.add_marker(pytest.mark.unit)
+        elif "/integration/" in str(item.fspath):
+            item.add_marker(pytest.mark.integration)
+        elif "/e2e/" in str(item.fspath):
+            item.add_marker(pytest.mark.e2e)
 
 
 @pytest.fixture
@@ -155,3 +171,80 @@ def mock_database_service(
     service.get_table_names = MagicMock(return_value={"users", "orders", "public.users", "public.orders"})
     service.execute_query = AsyncMock(return_value=sample_query_result)
     return service
+
+
+@pytest.fixture
+def sample_empty_result() -> QueryResultData:
+    """Sample empty query result for testing."""
+    return QueryResultData(
+        columns=[],
+        rows=[],
+        row_count=0,
+        execution_time_ms=5.0,
+    )
+
+
+@pytest.fixture
+def mock_openai_client() -> MagicMock:
+    """Mock OpenAI client for LLM testing."""
+    client = MagicMock()
+
+    # Mock successful SQL generation response
+    sql_response = MagicMock()
+    sql_response.choices = [MagicMock()]
+    sql_response.choices[0].message.content = "SELECT * FROM users"
+
+    # Mock successful validation response
+    validation_response = MagicMock()
+    validation_response.choices = [MagicMock()]
+    validation_response.choices[0].message.content = '{"passed": true, "message": "验证通过"}'
+
+    client.chat.completions.create = AsyncMock(return_value=sql_response)
+
+    return client
+
+
+# ============ Database Integration Test Fixtures ============
+
+
+@pytest.fixture
+def test_db_config() -> DatabaseConfig:
+    """Database config for integration tests.
+
+    Uses environment variables or defaults for test database connection.
+    """
+    return DatabaseConfig(
+        name="test_integration",
+        host=os.environ.get("TEST_DB_HOST", "localhost"),
+        port=int(os.environ.get("TEST_DB_PORT", "5433")),
+        database=os.environ.get("TEST_DB_NAME", "testdb"),
+        user=os.environ.get("TEST_DB_USER", "testuser"),
+        password=os.environ.get("TEST_DB_PASSWORD", "testpass"),
+    )
+
+
+@pytest.fixture
+def sample_column_info() -> ColumnInfo:
+    """Sample column info for testing."""
+    return ColumnInfo(
+        name="id",
+        data_type="integer",
+        is_nullable=False,
+        is_primary_key=True,
+    )
+
+
+@pytest.fixture
+def sample_table_info() -> TableInfo:
+    """Sample table info for testing."""
+    return TableInfo(
+        schema_name="public",
+        name="users",
+        columns=[
+            ColumnInfo(name="id", data_type="integer", is_nullable=False, is_primary_key=True),
+            ColumnInfo(name="name", data_type="varchar", is_nullable=False),
+            ColumnInfo(name="email", data_type="varchar", is_nullable=False),
+            ColumnInfo(name="created_at", data_type="timestamp", is_nullable=False),
+        ],
+        comment="User accounts table",
+    )

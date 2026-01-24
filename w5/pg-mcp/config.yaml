@@ -1,0 +1,36 @@
+# PostgreSQL MCP Server Configuration
+# 三个测试数据库
+
+databases:
+  # Small Database - 博客系统
+  - name: "blog_db"
+    host: "localhost"
+    port: 5432
+    database: "blog_db"
+    user: "postgres"
+    password: "postgres"
+    min_pool_size: 2
+    max_pool_size: 10
+    ssl: false
+
+  # Medium Database - 电商平台
+  - name: "ecommerce_db"
+    host: "localhost"
+    port: 5433
+    database: "ecommerce_db"
+    user: "postgres"
+    password: "postgres"
+    min_pool_size: 2
+    max_pool_size: 10
+    ssl: false
+
+  # Large Database - 企业ERP系统
+  - name: "erp_db"
+    host: "localhost"
+    port: 5434
+    database: "erp_db"
+    user: "postgres"
+    password: "postgres"
+    min_pool_size: 2
+    max_pool_size: 10
+    ssl: false

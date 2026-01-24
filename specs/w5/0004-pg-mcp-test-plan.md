@@ -25,13 +25,13 @@
 
 ### 1.4 当前测试状态
 
-**最后验证日期：2026-01-24**
+**最后验证日期：2026-01-24 (已更新)**
 
 | 指标 | 状态 |
 |------|------|
-| 测试总数 | 125 个 |
-| 通过率 | 100% (125/125) |
-| 总体覆盖率 | 79% |
+| 测试总数 | 174 个 |
+| 通过率 | 100% (174/174) |
+| 总体覆盖率 | 86% |
 
 **模块覆盖率详情：**
 
@@ -39,15 +39,17 @@
 |------|--------|------|
 | models/errors.py | 100% | ✅ |
 | models/query.py | 100% | ✅ |
-| models/schema.py | 71% | ⚠️ 需要补充 |
+| models/schema.py | 99% | ✅ |
 | config/settings.py | 94% | ✅ |
 | database/connection.py | 95% | ✅ |
 | database/schema_cache.py | 59% | ⚠️ 需要真实 DB 测试 |
 | database/service.py | 97% | ✅ |
 | llm/service.py | 95% | ✅ |
 | query/service.py | 100% | ✅ |
-| validator/sql_validator.py | 84% | ⚠️ 接近目标 |
-| server.py | 33% | ⚠️ 需要端到端测试 |
+| validator/sql_validator.py | 87% | ✅ |
+| server.py | 37% | ⚠️ 需要 HTTP 服务器测试 |
+
+**注意：** server.py 只提供 `query` 单一工具接口，数据库选择在服务器内部自动完成。
 
 ---
 
@@ -1380,15 +1382,30 @@ TOTAL                                     734    123    176     26    79%
 
 ### 14.4 现有测试文件清单
 
-| 文件 | 测试数 | 描述 |
-|------|--------|------|
-| `tests/test_models.py` | 16 | 数据模型单元测试 |
-| `tests/test_config.py` | 13 | 配置加载单元测试 |
-| `tests/test_validator.py` | 26 | SQL 校验器单元测试 |
-| `tests/test_database.py` | 24 | 数据库服务集成测试 (Mock) |
-| `tests/test_llm.py` | 26 | LLM 服务集成测试 (Mock) |
-| `tests/test_query_service.py` | 5 | 查询服务集成测试 |
-| `tests/test_server.py` | 15 | MCP 服务器测试 |
+**目录结构已按测试金字塔重组：**
+
+| 目录 | 文件 | 测试数 | 描述 |
+|------|------|--------|------|
+| `tests/unit/` | `test_models.py` | 27 | 数据模型单元测试 |
+| `tests/unit/` | `test_config.py` | 13 | 配置加载单元测试 |
+| `tests/unit/` | `test_validator.py` | 52 | SQL 校验器单元测试 |
+| `tests/integration/` | `test_database.py` | 24 | 数据库服务集成测试 (Mock) |
+| `tests/integration/` | `test_llm.py` | 26 | LLM 服务集成测试 (Mock) |
+| `tests/integration/` | `test_query_service.py` | 5 | 查询服务集成测试 |
+| `tests/e2e/` | `test_server.py` | 15 | MCP 服务器端到端测试 (FastMCP Client) |
+| `tests/fixtures/` | `sample_data.py` | - | 测试数据工厂 |
+| `tests/fixtures/` | `init_test_db.sql` | - | 数据库初始化脚本 |
+
+**按类别统计：**
+- 单元测试: 104 个
+- 集成测试: 55 个
+- 端到端测试: 15 个
+- **总计: 174 个**
+
+**MCP 接口说明：**
+- 只提供单一 `query` 工具接口
+- 数据库选择在服务器内部自动完成（使用配置中的第一个数据库）
+- 测试使用 FastMCP Client 进行 HTTP 风格测试
 
 ---
 
